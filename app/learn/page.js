@@ -183,7 +183,7 @@ export default function Learn() {
             <div className="title">วันนี้เรียนครบแล้ว</div>
             <div className="sub">{totalCount} / {totalCount} คำ จำได้หมดแล้ว</div>
             <div className="sub" style={{ marginTop: 10 }}>🔥 เรียนติดต่อกัน {streak} วัน</div>
-            {!isReviewDay && <div className="sub" style={{ marginTop: 10 }}>ไปทำแบบทดสอบ "ฟังแล้วพิมพ์" ให้ผ่านครบทุกคำ เพื่อปลดล็อกคำศัพท์ชุดถัดไป</div>}
+            {!isReviewDay && <div className="sub" style={{ marginTop: 10 }}>ไปทำแบบทดสอบ "ดูความหมายแล้วพิมพ์" ให้ผ่านครบทุกคำ เพื่อปลดล็อกคำศัพท์ชุดถัดไป</div>}
           </div>
           {!isReviewDay ? (
             <Link href="/test" className="primary-btn" style={{ marginTop: 26 }}>ไปทำแบบทดสอบ</Link>

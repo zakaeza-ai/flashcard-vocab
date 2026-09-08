@@ -73,14 +73,28 @@ export default function TestMenu() {
 
       {mode === 'menu' && (
         <>
+          <div
+            style={{
+              fontFamily: 'var(--font-sarabun)',
+              background: 'var(--paper)',
+              color: 'var(--ink)',
+              borderRadius: 14,
+              padding: '12px 16px',
+              marginBottom: 14,
+              fontSize: '0.88rem',
+              lineHeight: 1.5,
+            }}
+          >
+            📌 ต้องทำแบบทดสอบ <b>"ดูความหมายแล้วพิมพ์"</b> ให้ตอบถูก<b>ครบทุกคำ</b> ระบบถึงจะให้ผ่านและปลดล็อกคำศัพท์ชุดถัดไป — แบบทดสอบอีก 2 แบบใช้ฝึกฝนได้ตามสบาย แต่ไม่มีผลต่อการปลดล็อก
+          </div>
           <button className="menu-card" onClick={() => setMode('listen')}>
             <div className="row"><div className="icon">🔊</div>
-              <div><div className="t">ฟังแล้วพิมพ์</div><div className="d">ตอบถูกครบทุกคำเพื่อปลดล็อกคำศัพท์ชุดถัดไป</div></div>
+              <div><div className="t">ฟังแล้วพิมพ์</div><div className="d">ฟังเสียงแล้วพิมพ์คำศัพท์</div></div>
             </div><div className="go">›</div>
           </button>
           <button className="menu-card" onClick={() => setMode('meaning')}>
             <div className="row"><div className="icon">🧠</div>
-              <div><div className="t">ดูความหมายแล้วพิมพ์</div><div className="d">เห็นคำแปล/รูป แล้วสะกดคำศัพท์</div></div>
+              <div><div className="t">ดูความหมายแล้วพิมพ์</div><div className="d">ตอบถูกครบทุกคำเพื่อปลดล็อกคำศัพท์ชุดถัดไป</div></div>
             </div><div className="go">›</div>
           </button>
           <button className="menu-card" onClick={() => setMode('scramble')}>
@@ -111,8 +125,54 @@ function ResultScreen({ correct, total, onExit }) {
   );
 }
 
-/* ---------- Test A: listen & type — this is the daily unlock gate ---------- */
+/* ---------- Test A: listen & type ---------- */
 function ListenType({ accountId, onExit }) {
+  const [pool, setPool] = useState(null);
+  const [idx, setIdx] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [value, setValue] = useState('');
+  const [feedback, setFeedback] = useState(null);
+  const [answered, setAnswered] = useState(false);
+
+  useEffect(() => { getPool(accountId).then(setPool); }, [accountId]);
+  useEffect(() => { if (pool && pool[idx]) speak(pool[idx].en); }, [pool, idx]);
+
+  if (!pool) return <div className="loading-note">กำลังโหลด...</div>;
+  if (idx >= pool.length) return <ResultScreen correct={correct} total={pool.length} onExit={onExit} />;
+  const w = pool[idx];
+
+  async function check() {
+    const ok = value.trim().toUpperCase() === w.en.toUpperCase();
+    await markResult(accountId, w.id, ok);
+    setFeedback(ok ? { ok: true, text: '❤️ ถูกต้อง!' } : { ok: false, text: '❌ คำตอบคือ ' + w.en });
+    setAnswered(true);
+    if (ok) setCorrect((c) => c + 1);
+  }
+  function next() { setIdx((i) => i + 1); setValue(''); setFeedback(null); setAnswered(false); }
+
+  return (
+    <div className="test-box">
+      <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.85rem', color: 'var(--ink-soft)' }}>{idx + 1} / {pool.length}</div>
+      <button className="speak-btn" style={{ margin: '10px auto 0' }} onClick={() => speak(w.en)}>🔊</button>
+      <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.8rem', color: 'var(--ink-soft)', marginTop: 6 }}>แตะเพื่อฟังซ้ำ</div>
+      <input
+        className="type-input"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && !answered && check()}
+        placeholder="พิมพ์คำศัพท์ที่ได้ยิน"
+        disabled={answered}
+      />
+      {feedback && <div className={'feedback ' + (feedback.ok ? 'ok' : 'bad')}>{feedback.text}</div>}
+      <button className="primary-btn" style={{ marginTop: 16 }} onClick={answered ? next : check}>
+        {answered ? 'ถัดไป' : 'ตรวจคำตอบ'}
+      </button>
+    </div>
+  );
+}
+
+/* ---------- Test B: see meaning/image, type the word — this is the daily unlock gate ---------- */
+function MeaningType({ accountId, onExit }) {
   const [pool, setPool] = useState(null);
   const [meta, setMeta] = useState({ isNewDay: false, dayIdx: 1 });
   const [idx, setIdx] = useState(0);
@@ -120,7 +180,6 @@ function ListenType({ accountId, onExit }) {
   const [value, setValue] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [answered, setAnswered] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
   const advancedRef = useRef(false);
 
   useEffect(() => {
@@ -129,7 +188,6 @@ function ListenType({ accountId, onExit }) {
       setMeta({ isNewDay, dayIdx });
     });
   }, [accountId]);
-  useEffect(() => { if (pool && pool[idx]) speak(pool[idx].en); }, [pool, idx]);
 
   if (!pool) return <div className="loading-note">กำลังโหลด...</div>;
 
@@ -138,7 +196,6 @@ function ListenType({ accountId, onExit }) {
     if (allCorrect && meta.isNewDay && !advancedRef.current) {
       advancedRef.current = true;
       advanceToNextDay(accountId, meta.dayIdx);
-      setUnlocked(true);
     }
     return (
       <div className="card-stage">
@@ -176,51 +233,6 @@ function ListenType({ accountId, onExit }) {
           ตอบถูกครบทุกคำเพื่อปลดล็อกชุดถัดไป
         </div>
       )}
-      <button className="speak-btn" style={{ margin: '10px auto 0' }} onClick={() => speak(w.en)}>🔊</button>
-      <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.8rem', color: 'var(--ink-soft)', marginTop: 6 }}>แตะเพื่อฟังซ้ำ</div>
-      <input
-        className="type-input"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && !answered && check()}
-        placeholder="พิมพ์คำศัพท์ที่ได้ยิน"
-        disabled={answered}
-      />
-      {feedback && <div className={'feedback ' + (feedback.ok ? 'ok' : 'bad')}>{feedback.text}</div>}
-      <button className="primary-btn" style={{ marginTop: 16 }} onClick={answered ? next : check}>
-        {answered ? 'ถัดไป' : 'ตรวจคำตอบ'}
-      </button>
-    </div>
-  );
-}
-
-/* ---------- Test B: see meaning/image, type the word ---------- */
-function MeaningType({ accountId, onExit }) {
-  const [pool, setPool] = useState(null);
-  const [idx, setIdx] = useState(0);
-  const [correct, setCorrect] = useState(0);
-  const [value, setValue] = useState('');
-  const [feedback, setFeedback] = useState(null);
-  const [answered, setAnswered] = useState(false);
-
-  useEffect(() => { getPool(accountId).then(setPool); }, [accountId]);
-
-  if (!pool) return <div className="loading-note">กำลังโหลด...</div>;
-  if (idx >= pool.length) return <ResultScreen correct={correct} total={pool.length} onExit={onExit} />;
-  const w = pool[idx];
-
-  async function check() {
-    const ok = value.trim().toUpperCase() === w.en.toUpperCase();
-    await markResult(accountId, w.id, ok);
-    setFeedback(ok ? { ok: true, text: '❤️ ถูกต้อง!' } : { ok: false, text: '❌ คำตอบคือ ' + w.en });
-    setAnswered(true);
-    if (ok) setCorrect((c) => c + 1);
-  }
-  function next() { setIdx((i) => i + 1); setValue(''); setFeedback(null); setAnswered(false); }
-
-  return (
-    <div className="test-box">
-      <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.85rem', color: 'var(--ink-soft)' }}>{idx + 1} / {pool.length}</div>
       {w.image_url ? (
         <img src={w.image_url} alt="" style={{ maxHeight: 120, margin: '8px auto', display: 'block' }} />
       ) : null}
