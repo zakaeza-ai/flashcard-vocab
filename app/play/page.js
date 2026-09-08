@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
-import { currentDayIndex } from '../../lib/dayLogic';
 import { useAccount } from '../../lib/accountContext';
 
 const SESSION_SIZE = 20;
@@ -22,7 +21,7 @@ async function poolToday(accountId) {
     const { data: created } = await supabase.from('app_state').insert({ account_id: accountId }).select().single();
     stateRow = created;
   }
-  const dayIdx = currentDayIndex(stateRow.start_date);
+  const dayIdx = stateRow.current_day_index || 1;
   const { data: words } = await supabase.from('words').select('id, en, mean').eq('day_index', dayIdx);
   return shuffle([...(words || [])]);
 }

@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
-import { currentDayIndex, todayStr, daysBetween } from '../../lib/dayLogic';
+import { todayStr, daysBetween } from '../../lib/dayLogic';
 import { useAccount } from '../../lib/accountContext';
 
 const WORDS_PER_DAY = 10;
+const TARGET_DAYS = 365;
 
 function speak(text) {
   try {
@@ -39,6 +40,8 @@ export default function Learn() {
   const [isReviewDay, setIsReviewDay] = useState(false);
   const [justMissed, setJustMissed] = useState(false);
   const touchStartX = useRef(null);
+  const dayIdxRef = useRef(1);
+  const isReviewDayRef = useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -54,16 +57,18 @@ export default function Learn() {
         setError(stateErr.message); setLoading(false); return;
       }
 
-      const dayIdx = currentDayIndex(stateRow.start_date);
+      const dayIdx = stateRow.current_day_index || 1;
+      dayIdxRef.current = dayIdx;
 
       const { data: dayWords, error: wordsErr } = await supabase
         .from('words').select('*').eq('day_index', dayIdx).order('id', { ascending: true });
       if (wordsErr) { setError(wordsErr.message); setLoading(false); return; }
 
       let sessionWords = dayWords;
+      let reviewDay = false;
 
       if (!sessionWords || sessionWords.length === 0) {
-        setIsReviewDay(true);
+        reviewDay = true;
         const { data: progressRows } = await supabase
           .from('progress').select('word_id, status').eq('account_id', account.id).in('status', ['review', 'learned']);
         let ids = (progressRows || []).map((p) => p.word_id);
@@ -76,6 +81,8 @@ export default function Learn() {
           sessionWords = reviewWords || [];
         }
       }
+      setIsReviewDay(reviewDay);
+      isReviewDayRef.current = reviewDay;
 
       const t = todayStr();
       if (stateRow.last_active_date !== t) {
@@ -87,12 +94,31 @@ export default function Learn() {
         setStreak(stateRow.current_streak);
       }
 
+      // Check which of today's words are already marked learned for this account —
+      // reopening the page after finishing shouldn't force re-hearting the same words.
+      const sessionIds = (sessionWords || []).map((w) => w.id);
+      const { data: learnedRows } = await supabase
+        .from('progress')
+        .select('word_id')
+        .eq('account_id', account.id)
+        .eq('status', 'learned')
+        .in('word_id', sessionIds);
+      const alreadyLearnedIds = new Set((learnedRows || []).map((r) => r.word_id));
+
       const byId = {};
       (sessionWords || []).forEach((w) => { byId[w.id] = w; });
       setWordsById(byId);
-      setQueue((sessionWords || []).map((w) => w.id));
-      setTotalCount((sessionWords || []).length);
-      setMasteredCount(0);
+      setTotalCount(sessionIds.length);
+
+      const remainingIds = sessionIds.filter((id) => !alreadyLearnedIds.has(id));
+      setMasteredCount(sessionIds.length - remainingIds.length);
+
+      if (remainingIds.length === 0 && sessionIds.length > 0) {
+        setQueue([]);
+        setDone(true);
+      } else {
+        setQueue(remainingIds);
+      }
       setLoading(false);
     }
     load();
@@ -157,8 +183,13 @@ export default function Learn() {
             <div className="title">วันนี้เรียนครบแล้ว</div>
             <div className="sub">{totalCount} / {totalCount} คำ จำได้หมดแล้ว</div>
             <div className="sub" style={{ marginTop: 10 }}>🔥 เรียนติดต่อกัน {streak} วัน</div>
+            {!isReviewDay && <div className="sub" style={{ marginTop: 10 }}>ไปทำแบบทดสอบ "ฟังแล้วพิมพ์" ให้ผ่านครบทุกคำ เพื่อปลดล็อกคำศัพท์ชุดถัดไป</div>}
           </div>
-          <Link href="/" className="primary-btn" style={{ marginTop: 26 }}>กลับหน้าแรก</Link>
+          {!isReviewDay ? (
+            <Link href="/test" className="primary-btn" style={{ marginTop: 26 }}>ไปทำแบบทดสอบ</Link>
+          ) : (
+            <Link href="/" className="primary-btn" style={{ marginTop: 26 }}>กลับหน้าแรก</Link>
+          )}
         </div>
       </main>
     );

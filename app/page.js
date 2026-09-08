@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
-import { currentDayIndex, TARGET_DAYS } from '../lib/dayLogic';
+import { TARGET_DAYS } from '../lib/dayLogic';
 import { useAccount } from '../lib/accountContext';
 
 export default function Home() {
@@ -76,7 +76,7 @@ export default function Home() {
     );
   }
 
-  const dayIdx = currentDayIndex(appState.start_date);
+  const dayIdx = appState.current_day_index || 1;
   const pct = Math.round((dayIdx / TARGET_DAYS) * 100);
 
   return (

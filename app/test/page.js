@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
-import { currentDayIndex } from '../../lib/dayLogic';
 import { useAccount } from '../../lib/accountContext';
 
 const WORDS_PER_DAY = 10;
@@ -26,17 +25,31 @@ function shuffle(arr) {
   return arr;
 }
 
-async function getPool(accountId) {
+const TARGET_DAYS = 365;
+
+async function getTodayPoolForUnlock(accountId) {
   let { data: stateRow } = await supabase.from('app_state').select('*').eq('account_id', accountId).single();
   if (!stateRow) {
     const { data: created } = await supabase.from('app_state').insert({ account_id: accountId }).select().single();
     stateRow = created;
   }
-  const dayIdx = currentDayIndex(stateRow.start_date);
+  const dayIdx = stateRow.current_day_index || 1;
   const { data: dayWords } = await supabase.from('words').select('*').eq('day_index', dayIdx);
-  if (dayWords && dayWords.length) return shuffle([...dayWords]);
+  if (dayWords && dayWords.length) {
+    return { words: shuffle([...dayWords]), isNewDay: true, dayIdx };
+  }
   const { data: anyWords } = await supabase.from('words').select('*').limit(WORDS_PER_DAY);
-  return shuffle([...(anyWords || [])]);
+  return { words: shuffle([...(anyWords || [])]), isNewDay: false, dayIdx };
+}
+
+async function advanceToNextDay(accountId, dayIdx) {
+  const nextDay = Math.min(TARGET_DAYS, dayIdx + 1);
+  await supabase.from('app_state').update({ current_day_index: nextDay }).eq('account_id', accountId);
+}
+
+async function getPool(accountId) {
+  const { words } = await getTodayPoolForUnlock(accountId);
+  return words;
 }
 
 async function markResult(accountId, wordId, ok) {
@@ -62,7 +75,7 @@ export default function TestMenu() {
         <>
           <button className="menu-card" onClick={() => setMode('listen')}>
             <div className="row"><div className="icon">🔊</div>
-              <div><div className="t">ฟังแล้วพิมพ์</div><div className="d">ฟังเสียงแล้วพิมพ์คำศัพท์</div></div>
+              <div><div className="t">ฟังแล้วพิมพ์</div><div className="d">ตอบถูกครบทุกคำเพื่อปลดล็อกคำศัพท์ชุดถัดไป</div></div>
             </div><div className="go">›</div>
           </button>
           <button className="menu-card" onClick={() => setMode('meaning')}>
@@ -98,20 +111,52 @@ function ResultScreen({ correct, total, onExit }) {
   );
 }
 
-/* ---------- Test A: listen & type ---------- */
+/* ---------- Test A: listen & type — this is the daily unlock gate ---------- */
 function ListenType({ accountId, onExit }) {
   const [pool, setPool] = useState(null);
+  const [meta, setMeta] = useState({ isNewDay: false, dayIdx: 1 });
   const [idx, setIdx] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [value, setValue] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [answered, setAnswered] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const advancedRef = useRef(false);
 
-  useEffect(() => { getPool(accountId).then(setPool); }, [accountId]);
+  useEffect(() => {
+    getTodayPoolForUnlock(accountId).then(({ words, isNewDay, dayIdx }) => {
+      setPool(words);
+      setMeta({ isNewDay, dayIdx });
+    });
+  }, [accountId]);
   useEffect(() => { if (pool && pool[idx]) speak(pool[idx].en); }, [pool, idx]);
 
   if (!pool) return <div className="loading-note">กำลังโหลด...</div>;
-  if (idx >= pool.length) return <ResultScreen correct={correct} total={pool.length} onExit={onExit} />;
+
+  if (idx >= pool.length) {
+    const allCorrect = correct === pool.length;
+    if (allCorrect && meta.isNewDay && !advancedRef.current) {
+      advancedRef.current = true;
+      advanceToNextDay(accountId, meta.dayIdx);
+      setUnlocked(true);
+    }
+    return (
+      <div className="card-stage">
+        <div className="celebrate">
+          <div className="emoji">{allCorrect ? '🏆' : '📝'}</div>
+          <div className="title">{allCorrect ? 'ผ่านครบทุกคำ!' : 'ทำแบบทดสอบเสร็จแล้ว'}</div>
+          <div className="sub">ถูก {correct} / {pool.length} คำ</div>
+          {meta.isNewDay && (
+            <div className="sub" style={{ marginTop: 10 }}>
+              {allCorrect ? '🔓 ปลดล็อกคำศัพท์ชุดถัดไปแล้ว!' : 'ต้องตอบถูกครบทุกคำถึงจะปลดล็อกชุดถัดไป ลองอีกครั้งได้เลย'}
+            </div>
+          )}
+        </div>
+        <button className="primary-btn" style={{ marginTop: 26 }} onClick={onExit}>กลับเมนูแบบทดสอบ</button>
+      </div>
+    );
+  }
+
   const w = pool[idx];
 
   async function check() {
@@ -126,6 +171,11 @@ function ListenType({ accountId, onExit }) {
   return (
     <div className="test-box">
       <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.85rem', color: 'var(--ink-soft)' }}>{idx + 1} / {pool.length}</div>
+      {meta.isNewDay && (
+        <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.78rem', color: 'var(--coral-deep)', marginTop: 2 }}>
+          ตอบถูกครบทุกคำเพื่อปลดล็อกชุดถัดไป
+        </div>
+      )}
       <button className="speak-btn" style={{ margin: '10px auto 0' }} onClick={() => speak(w.en)}>🔊</button>
       <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.8rem', color: 'var(--ink-soft)', marginTop: 6 }}>แตะเพื่อฟังซ้ำ</div>
       <input
