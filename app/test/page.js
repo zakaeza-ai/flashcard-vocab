@@ -257,7 +257,7 @@ function Scramble({ accountId, onExit }) {
       </div>
       {feedback && <div className={'feedback ' + (feedback.ok ? 'ok' : 'bad')}>{feedback.text}</div>}
       <div style={{ display: 'flex', gap: 10 }}>
-        <button className="ghost-btn" style={{ marginTop: 0 }} onClick={() => setPlaced([])} disabled={answered}>ล้าง</button>
+        <button className="ghost-btn" style={{ marginTop: 0, background: 'var(--bg)', color: 'white' }} onClick={() => setPlaced([])} disabled={answered}>↺ ล้าง</button>
         <button
           className="primary-btn"
           onClick={answered ? next : check}
