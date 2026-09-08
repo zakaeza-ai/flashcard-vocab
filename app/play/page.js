@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { currentDayIndex } from '../../lib/dayLogic';
+import { useAccount } from '../../lib/accountContext';
 
 const SESSION_SIZE = 20;
 
@@ -15,15 +16,19 @@ function shuffle(arr) {
   return arr;
 }
 
-async function poolToday() {
-  const { data: stateRow } = await supabase.from('app_state').select('*').eq('id', 1).single();
+async function poolToday(accountId) {
+  let { data: stateRow } = await supabase.from('app_state').select('*').eq('account_id', accountId).single();
+  if (!stateRow) {
+    const { data: created } = await supabase.from('app_state').insert({ account_id: accountId }).select().single();
+    stateRow = created;
+  }
   const dayIdx = currentDayIndex(stateRow.start_date);
   const { data: words } = await supabase.from('words').select('id, en, mean').eq('day_index', dayIdx);
   return shuffle([...(words || [])]);
 }
 
-async function poolLearned() {
-  const { data: progressRows } = await supabase.from('progress').select('word_id').eq('status', 'learned');
+async function poolLearned(accountId) {
+  const { data: progressRows } = await supabase.from('progress').select('word_id').eq('account_id', accountId).eq('status', 'learned');
   const ids = (progressRows || []).map((r) => r.word_id);
   if (ids.length === 0) return [];
   const { data: words } = await supabase.from('words').select('id, en, mean').in('id', ids);
@@ -36,12 +41,13 @@ async function poolAll() {
 }
 
 export default function PlaySetup() {
+  const { account } = useAccount();
   const [loading, setLoading] = useState(false);
   const [pool, setPool] = useState(null);
 
   async function start(getPool) {
     setLoading(true);
-    const words = await getPool();
+    const words = await getPool(account.id);
     if (words.length === 0) {
       setLoading(false);
       alert('ยังไม่มีคำศัพท์ในหมวดนี้ ลองเลือกหมวดอื่นดูก่อนนะ');

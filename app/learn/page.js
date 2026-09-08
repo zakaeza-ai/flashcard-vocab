@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { currentDayIndex, todayStr, daysBetween } from '../../lib/dayLogic';
+import { useAccount } from '../../lib/accountContext';
 
 const WORDS_PER_DAY = 10;
 
@@ -26,6 +27,7 @@ function shuffle(arr) {
 }
 
 export default function Learn() {
+  const { account } = useAccount();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [wordsById, setWordsById] = useState({});
@@ -40,9 +42,17 @@ export default function Learn() {
 
   useEffect(() => {
     async function load() {
-      const { data: stateRow, error: stateErr } = await supabase
-        .from('app_state').select('*').eq('id', 1).single();
-      if (stateErr) { setError(stateErr.message); setLoading(false); return; }
+      let { data: stateRow, error: stateErr } = await supabase
+        .from('app_state').select('*').eq('account_id', account.id).single();
+
+      if (stateErr && stateErr.code === 'PGRST116') {
+        const { data: created, error: createErr } = await supabase
+          .from('app_state').insert({ account_id: account.id }).select().single();
+        if (createErr) { setError(createErr.message); setLoading(false); return; }
+        stateRow = created;
+      } else if (stateErr) {
+        setError(stateErr.message); setLoading(false); return;
+      }
 
       const dayIdx = currentDayIndex(stateRow.start_date);
 
@@ -55,7 +65,7 @@ export default function Learn() {
       if (!sessionWords || sessionWords.length === 0) {
         setIsReviewDay(true);
         const { data: progressRows } = await supabase
-          .from('progress').select('word_id, status').in('status', ['review', 'learned']);
+          .from('progress').select('word_id, status').eq('account_id', account.id).in('status', ['review', 'learned']);
         let ids = (progressRows || []).map((p) => p.word_id);
         if (ids.length === 0) {
           const { data: anyWords } = await supabase.from('words').select('*').limit(WORDS_PER_DAY);
@@ -71,7 +81,7 @@ export default function Learn() {
       if (stateRow.last_active_date !== t) {
         const newStreak = stateRow.last_active_date && daysBetween(stateRow.last_active_date, t) === 1
           ? stateRow.current_streak + 1 : 1;
-        await supabase.from('app_state').update({ last_active_date: t, current_streak: newStreak }).eq('id', 1);
+        await supabase.from('app_state').update({ last_active_date: t, current_streak: newStreak }).eq('account_id', account.id);
         setStreak(newStreak);
       } else {
         setStreak(stateRow.current_streak);
@@ -86,11 +96,11 @@ export default function Learn() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [account.id]);
 
   async function markLearned(wordId) {
     await supabase.from('progress').upsert({
-      word_id: wordId, status: 'learned', updated_at: new Date().toISOString(),
+      account_id: account.id, word_id: wordId, status: 'learned', updated_at: new Date().toISOString(),
     });
     setJustMissed(false);
     setMasteredCount((c) => c + 1);
@@ -103,7 +113,7 @@ export default function Learn() {
 
   async function markStillLearning(wordId) {
     await supabase.from('progress').upsert({
-      word_id: wordId, status: 'review', updated_at: new Date().toISOString(),
+      account_id: account.id, word_id: wordId, status: 'review', updated_at: new Date().toISOString(),
     });
     setJustMissed(true);
     // send this word to the back of the queue so it comes around again

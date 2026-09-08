@@ -1,5 +1,6 @@
 import { Kanit, Sarabun } from 'next/font/google';
 import './globals.css';
+import { AccountProvider } from '../lib/accountContext';
 
 const kanit = Kanit({
   subsets: ['latin', 'thai'],
@@ -23,7 +24,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="th">
-      <body className={`${kanit.className} ${kanit.variable} ${sarabun.variable}`}>{children}</body>
+      <body className={`${kanit.className} ${kanit.variable} ${sarabun.variable}`}>
+        <AccountProvider>{children}</AccountProvider>
+      </body>
     </html>
   );
 }

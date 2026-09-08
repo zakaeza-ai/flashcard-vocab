@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
+import { useAccount } from '../../lib/accountContext';
 
 function speak(text) {
   try {
@@ -15,6 +16,7 @@ function speak(text) {
 }
 
 export default function Review() {
+  const { account } = useAccount();
   const [loading, setLoading] = useState(true);
   const [words, setWords] = useState([]);
 
@@ -23,6 +25,7 @@ export default function Review() {
       const { data: progressRows } = await supabase
         .from('progress')
         .select('word_id')
+        .eq('account_id', account.id)
         .eq('status', 'review');
       const ids = (progressRows || []).map((r) => r.word_id);
       if (ids.length) {
@@ -32,7 +35,7 @@ export default function Review() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [account.id]);
 
   return (
     <main className="wrap">
@@ -60,9 +63,7 @@ export default function Review() {
       ))}
 
       {!loading && words.length > 0 && (
-        <div className="loading-note" style={{ fontSize: '0.85rem' }}>
-          แบบทดสอบสำหรับฝึกคำเหล่านี้โดยตรงจะเปิดใน Phase 3
-        </div>
+        <Link href="/test" className="primary-btn" style={{ marginTop: 14 }}>ไปทำแบบทดสอบคำเหล่านี้</Link>
       )}
     </main>
   );

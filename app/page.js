@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 import { currentDayIndex, TARGET_DAYS } from '../lib/dayLogic';
+import { useAccount } from '../lib/accountContext';
 
 export default function Home() {
+  const { account, logout } = useAccount();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [appState, setAppState] = useState(null);
@@ -14,13 +16,22 @@ export default function Home() {
 
   useEffect(() => {
     async function load() {
-      const { data: stateRow, error: stateErr } = await supabase
+      let { data: stateRow, error: stateErr } = await supabase
         .from('app_state')
         .select('*')
-        .eq('id', 1)
+        .eq('account_id', account.id)
         .single();
 
-      if (stateErr) {
+      if (stateErr && stateErr.code === 'PGRST116') {
+        // no row yet for this account — create one
+        const { data: created, error: createErr } = await supabase
+          .from('app_state')
+          .insert({ account_id: account.id })
+          .select()
+          .single();
+        if (createErr) { setError(createErr.message); setLoading(false); return; }
+        stateRow = created;
+      } else if (stateErr) {
         setError(stateErr.message);
         setLoading(false);
         return;
@@ -29,11 +40,13 @@ export default function Home() {
       const { count: learned } = await supabase
         .from('progress')
         .select('*', { count: 'exact', head: true })
+        .eq('account_id', account.id)
         .eq('status', 'learned');
 
       const { count: review } = await supabase
         .from('progress')
         .select('*', { count: 'exact', head: true })
+        .eq('account_id', account.id)
         .eq('status', 'review');
 
       setAppState(stateRow);
@@ -42,7 +55,7 @@ export default function Home() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [account.id]);
 
   if (loading) {
     return (
@@ -68,8 +81,8 @@ export default function Home() {
 
   return (
     <main className="wrap">
-      <div className="hi">สวัสดี 👋</div>
-      <div className="eyebrow">พร้อมท่องศัพท์วันนี้หรือยัง?</div>
+      <div className="hi">สวัสดี {account.name} 👋</div>
+      <div className="eyebrow">พร้อมท่องศัพท์วันนี้หรือยัง? · ใช้งานได้ถึง {account.expires_at}</div>
 
       <div className="progress-card">
         <div className="progress-row">
@@ -108,6 +121,10 @@ export default function Home() {
         <div className="stat-box"><div className="n">❤️ {learnedCount}</div><div className="l">คำที่จำได้</div></div>
         <div className="stat-box"><div className="n">🔥 {appState.current_streak}</div><div className="l">วันติดต่อกัน</div></div>
       </div>
+
+      <button className="review-mark-btn" style={{ display: 'block', margin: '20px auto 0' }} onClick={logout}>
+        ออกจากระบบ
+      </button>
     </main>
   );
 }

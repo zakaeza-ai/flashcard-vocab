@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { currentDayIndex } from '../../lib/dayLogic';
+import { useAccount } from '../../lib/accountContext';
 
 const WORDS_PER_DAY = 10;
 
@@ -25,8 +26,12 @@ function shuffle(arr) {
   return arr;
 }
 
-async function getPool() {
-  const { data: stateRow } = await supabase.from('app_state').select('*').eq('id', 1).single();
+async function getPool(accountId) {
+  let { data: stateRow } = await supabase.from('app_state').select('*').eq('account_id', accountId).single();
+  if (!stateRow) {
+    const { data: created } = await supabase.from('app_state').insert({ account_id: accountId }).select().single();
+    stateRow = created;
+  }
   const dayIdx = currentDayIndex(stateRow.start_date);
   const { data: dayWords } = await supabase.from('words').select('*').eq('day_index', dayIdx);
   if (dayWords && dayWords.length) return shuffle([...dayWords]);
@@ -34,8 +39,9 @@ async function getPool() {
   return shuffle([...(anyWords || [])]);
 }
 
-async function markResult(wordId, ok) {
+async function markResult(accountId, wordId, ok) {
   await supabase.from('progress').upsert({
+    account_id: accountId,
     word_id: wordId,
     status: ok ? 'learned' : 'review',
     updated_at: new Date().toISOString(),
@@ -43,6 +49,7 @@ async function markResult(wordId, ok) {
 }
 
 export default function TestMenu() {
+  const { account } = useAccount();
   const [mode, setMode] = useState('menu'); // menu | listen | scramble | meaning
   return (
     <main className="wrap">
@@ -71,9 +78,9 @@ export default function TestMenu() {
         </>
       )}
 
-      {mode === 'listen' && <ListenType onExit={() => setMode('menu')} />}
-      {mode === 'meaning' && <MeaningType onExit={() => setMode('menu')} />}
-      {mode === 'scramble' && <Scramble onExit={() => setMode('menu')} />}
+      {mode === 'listen' && <ListenType accountId={account.id} onExit={() => setMode('menu')} />}
+      {mode === 'meaning' && <MeaningType accountId={account.id} onExit={() => setMode('menu')} />}
+      {mode === 'scramble' && <Scramble accountId={account.id} onExit={() => setMode('menu')} />}
     </main>
   );
 }
@@ -92,7 +99,7 @@ function ResultScreen({ correct, total, onExit }) {
 }
 
 /* ---------- Test A: listen & type ---------- */
-function ListenType({ onExit }) {
+function ListenType({ accountId, onExit }) {
   const [pool, setPool] = useState(null);
   const [idx, setIdx] = useState(0);
   const [correct, setCorrect] = useState(0);
@@ -100,7 +107,7 @@ function ListenType({ onExit }) {
   const [feedback, setFeedback] = useState(null);
   const [answered, setAnswered] = useState(false);
 
-  useEffect(() => { getPool().then(setPool); }, []);
+  useEffect(() => { getPool(accountId).then(setPool); }, [accountId]);
   useEffect(() => { if (pool && pool[idx]) speak(pool[idx].en); }, [pool, idx]);
 
   if (!pool) return <div className="loading-note">กำลังโหลด...</div>;
@@ -109,7 +116,7 @@ function ListenType({ onExit }) {
 
   async function check() {
     const ok = value.trim().toUpperCase() === w.en.toUpperCase();
-    await markResult(w.id, ok);
+    await markResult(accountId, w.id, ok);
     setFeedback(ok ? { ok: true, text: '❤️ ถูกต้อง!' } : { ok: false, text: '❌ คำตอบคือ ' + w.en });
     setAnswered(true);
     if (ok) setCorrect((c) => c + 1);
@@ -138,7 +145,7 @@ function ListenType({ onExit }) {
 }
 
 /* ---------- Test B: see meaning/image, type the word ---------- */
-function MeaningType({ onExit }) {
+function MeaningType({ accountId, onExit }) {
   const [pool, setPool] = useState(null);
   const [idx, setIdx] = useState(0);
   const [correct, setCorrect] = useState(0);
@@ -146,7 +153,7 @@ function MeaningType({ onExit }) {
   const [feedback, setFeedback] = useState(null);
   const [answered, setAnswered] = useState(false);
 
-  useEffect(() => { getPool().then(setPool); }, []);
+  useEffect(() => { getPool(accountId).then(setPool); }, [accountId]);
 
   if (!pool) return <div className="loading-note">กำลังโหลด...</div>;
   if (idx >= pool.length) return <ResultScreen correct={correct} total={pool.length} onExit={onExit} />;
@@ -154,7 +161,7 @@ function MeaningType({ onExit }) {
 
   async function check() {
     const ok = value.trim().toUpperCase() === w.en.toUpperCase();
-    await markResult(w.id, ok);
+    await markResult(accountId, w.id, ok);
     setFeedback(ok ? { ok: true, text: '❤️ ถูกต้อง!' } : { ok: false, text: '❌ คำตอบคือ ' + w.en });
     setAnswered(true);
     if (ok) setCorrect((c) => c + 1);
@@ -187,7 +194,7 @@ function MeaningType({ onExit }) {
 }
 
 /* ---------- Test C: unscramble letters ---------- */
-function Scramble({ onExit }) {
+function Scramble({ accountId, onExit }) {
   const [pool, setPool] = useState(null);
   const [idx, setIdx] = useState(0);
   const [correct, setCorrect] = useState(0);
@@ -196,7 +203,7 @@ function Scramble({ onExit }) {
   const [feedback, setFeedback] = useState(null);
   const [answered, setAnswered] = useState(false);
 
-  useEffect(() => { getPool().then(setPool); }, []);
+  useEffect(() => { getPool(accountId).then(setPool); }, [accountId]);
 
   useEffect(() => {
     if (!pool || !pool[idx]) return;
@@ -220,7 +227,7 @@ function Scramble({ onExit }) {
 
   async function check() {
     const ok = answer.toUpperCase() === w.en.toUpperCase();
-    await markResult(w.id, ok);
+    await markResult(accountId, w.id, ok);
     setFeedback(ok ? { ok: true, text: '❤️ ถูกต้อง!' } : { ok: false, text: '❌ คำตอบคือ ' + w.en });
     setAnswered(true);
     if (ok) setCorrect((c) => c + 1);
