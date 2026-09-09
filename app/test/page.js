@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useAccount } from '../../lib/accountContext';
+import BgMusic from '../../lib/BgMusic';
 
 const WORDS_PER_DAY = 10;
 
@@ -70,6 +71,8 @@ export default function TestMenu() {
         <Link href="/" className="back-btn">←</Link>
         <div className="title">แบบทดสอบ</div>
       </div>
+
+      <BgMusic />
 
       {mode === 'menu' && (
         <>
