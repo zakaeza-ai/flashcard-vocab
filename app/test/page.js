@@ -221,7 +221,11 @@ function MeaningType({ accountId, onExit }) {
             </div>
           )}
         </div>
-        <button className="primary-btn" style={{ marginTop: 26 }} onClick={onExit}>กลับเมนูแบบทดสอบ</button>
+        {allCorrect && meta.isNewDay ? (
+          <Link href="/" className="primary-btn" style={{ marginTop: 26 }}>กลับหน้าแรก</Link>
+        ) : (
+          <button className="primary-btn" style={{ marginTop: 26 }} onClick={onExit}>กลับเมนูแบบทดสอบ</button>
+        )}
       </div>
     );
   }
@@ -286,7 +290,11 @@ function Scramble({ accountId, onExit }) {
   const [feedback, setFeedback] = useState(null);
   const [answered, setAnswered] = useState(false);
 
-  useEffect(() => { getPool(accountId).then(setPool); }, [accountId]);
+  useEffect(() => {
+    getPool(accountId).then((words) => {
+      setPool(words.filter((w) => !w.en.includes(' ')));
+    });
+  }, [accountId]);
 
   useEffect(() => {
     if (!pool || !pool[idx]) return;
