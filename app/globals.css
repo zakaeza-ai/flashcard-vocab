@@ -51,7 +51,7 @@ body {
 .menu-card.disabled { opacity: 0.55; cursor: default; }
 .menu-card .row { display: flex; align-items: center; flex: 1; }
 .menu-card .icon { font-size: 1.8rem; margin-right: 14px; }
-.menu-card .t { font-size: 1.05rem; font-weight: 600; }
+.menu-card .t { font-size: 1.2rem; font-weight: 600; }
 .menu-card .d { font-family: var(--font-sarabun); font-size: 0.88rem; color: var(--ink-soft); margin-top: 2px; }
 .menu-card .go { font-size: 1.3rem; color: var(--ink-soft); }
 
@@ -73,10 +73,10 @@ body {
   padding: 24px; position: relative; touch-action: pan-y; user-select: none;
 }
 .grade-tag { position: absolute; top: 16px; right: 18px; font-family: var(--font-sarabun); font-size: 0.72rem; color: var(--ink-soft); background: var(--paper-edge); padding: 3px 10px; border-radius: 999px; }
-.flashcard .word { font-size: clamp(2.1rem, 10vw, 3.1rem); font-weight: 800; color: var(--ink); text-align: center; word-break: break-word; }
+.flashcard .word { font-size: clamp(2.4rem, 11vw, 3.6rem); font-weight: 800; color: var(--ink); text-align: center; word-break: break-word; }
 .flashcard-img { width: 100%; max-height: 130px; object-fit: contain; margin-bottom: 10px; border-radius: 12px; }
-.flashcard .reading { font-family: var(--font-sarabun); font-size: 1.2rem; font-weight: 500; color: var(--ink-soft); margin-top: 16px; }
-.flashcard .meaning { font-family: var(--font-sarabun); font-size: 1.35rem; color: var(--coral-deep); font-weight: 600; margin-top: 6px; }
+.flashcard .reading { font-family: var(--font-sarabun); font-size: 1.35rem; font-weight: 500; color: var(--ink-soft); margin-top: 16px; }
+.flashcard .meaning { font-family: var(--font-sarabun); font-size: 1.55rem; color: var(--coral-deep); font-weight: 600; margin-top: 6px; }
 .speak-btn { margin-top: 20px; background: var(--bg); color: white; border: none; border-radius: 50%; width: 52px; height: 52px; font-size: 1.3rem; cursor: pointer; }
 .card-counter { color: #BFE0D6; font-size: 0.85rem; margin-top: 14px; }
 
