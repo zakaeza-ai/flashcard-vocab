@@ -309,7 +309,7 @@ function Scramble({ accountId, onExit }) {
   const doneAll = placed.length === w.en.length;
 
  async function check() {
-    const ok = value.trim().toUpperCase() === w.en.toUpperCase();
+    const ok = answer.toUpperCase() === w.en.toUpperCase();
     await markResult(accountId, w.id, ok);
     setFeedback(ok ? { ok: true, text: '❤️ ถูกต้อง!' } : { ok: false, text: '❌ คำตอบคือ ' + w.en });
     setAnswered(true);
