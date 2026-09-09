@@ -8,7 +8,7 @@ create or replace view leaderboard as
 select
   a.id as account_id,
   a.name,
-  coalesce(count(p.id) filter (where p.status = 'learned'), 0) as words_learned
+  coalesce(count(*) filter (where p.status = 'learned'), 0) as words_learned
 from accounts a
 left join progress p on p.account_id = a.id
 group by a.id, a.name

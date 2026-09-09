@@ -74,7 +74,7 @@ export default function Leaderboard() {
               <div>
                 <div className="t">{row.name}{isMe ? ' (คุณ)' : ''}</div>
                 <div className="d" style={{ color: isMe ? '#FFE1E6' : 'var(--ink-soft)' }}>
-                  Lv.{levelOf(row.words_learned)} · จำได้ {row.words_learned} คำ
+                  ท่องมาแล้ว {row.day_index} วัน · {row.words_learned} คำ · Lv.{levelOf(row.words_learned)}
                 </div>
               </div>
             </div>

@@ -78,6 +78,7 @@ export default function Home() {
 
   const dayIdx = appState.current_day_index || 1;
   const pct = Math.round((dayIdx / TARGET_DAYS) * 100);
+  const oxfordUnlocked = dayIdx > 355;
 
   return (
     <main className="wrap">
@@ -92,6 +93,25 @@ export default function Home() {
         <div className="bar-track"><div className="bar-fill" style={{ width: pct + '%' }} /></div>
         <div className="streak-line">🔥 เรียนติดต่อกัน <b>{appState.current_streak}</b> วัน</div>
       </div>
+
+      {oxfordUnlocked && (
+        <Link
+          href="/learn"
+          className="menu-card"
+          style={{
+            background: 'linear-gradient(135deg, var(--gold-deep), var(--gold))',
+            color: 'var(--ink)',
+            border: '2px solid var(--gold-deep)',
+          }}
+        >
+          <div className="row"><div className="icon">🎓</div>
+            <div>
+              <div className="t">ม.4-6 เตรียมสอบ</div>
+              <div className="d" style={{ color: 'var(--ink-soft)' }}>ปลดล็อกแล้ว! คำศัพท์ระดับ Oxford 3000</div>
+            </div>
+          </div><div className="go">›</div>
+        </Link>
+      )}
 
       <Link href="/learn" className="menu-card" style={{ background: 'linear-gradient(135deg, var(--coral), var(--coral-deep))', color: 'white' }}>
         <div className="row"><div className="icon">📚</div>
