@@ -302,12 +302,15 @@ function Scramble({ accountId, onExit }) {
   const answer = placed.map((i) => w.en[i]).join('');
   const doneAll = placed.length === w.en.length;
 
-  async function check() {
-    const ok = answer.toUpperCase() === w.en.toUpperCase();
+ async function check() {
+    const ok = value.trim().toUpperCase() === w.en.toUpperCase();
     await markResult(accountId, w.id, ok);
     setFeedback(ok ? { ok: true, text: '❤️ ถูกต้อง!' } : { ok: false, text: '❌ คำตอบคือ ' + w.en });
     setAnswered(true);
-    if (ok) setCorrect((c) => c + 1);
+    if (ok) {
+      setCorrect((c) => c + 1);
+      setTimeout(next, 800);
+    }
   }
   function next() {
     setIdx((i) => i + 1); setOrder(null); setPlaced([]); setFeedback(null); setAnswered(false);
