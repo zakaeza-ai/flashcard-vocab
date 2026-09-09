@@ -162,7 +162,7 @@ function ListenType({ accountId, onExit }) {
         className="type-input"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && !answered && check()}
+        onKeyDown={(e) => e.key === 'Enter' && (answered ? next() : check())}
         placeholder="พิมพ์คำศัพท์ที่ได้ยิน"
         disabled={answered}
         autoComplete="off"
@@ -252,7 +252,7 @@ function MeaningType({ accountId, onExit }) {
         className="type-input"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && !answered && check()}
+        onKeyDown={(e) => e.key === 'Enter' && (answered ? next() : check())}
         placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ"
         disabled={answered}
         autoComplete="off"
