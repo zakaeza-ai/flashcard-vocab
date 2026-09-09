@@ -148,8 +148,11 @@ function ListenType({ accountId, onExit }) {
     const ok = value.trim().toUpperCase() === w.en.toUpperCase();
     await markResult(accountId, w.id, ok);
     setFeedback(ok ? { ok: true, text: '❤️ ถูกต้อง!' } : { ok: false, text: '❌ คำตอบคือ ' + w.en });
-    setAnswered(true);
-    if (ok) setCorrect((c) => c + 1);
+     setAnswered(true);
+    if (ok) {
+      setCorrect((c) => c + 1);
+      setTimeout(next, 800);
+    }
   }
   function next() { setIdx((i) => i + 1); setValue(''); setFeedback(null); setAnswered(false); }
 
@@ -229,8 +232,11 @@ function MeaningType({ accountId, onExit }) {
     const ok = value.trim().toUpperCase() === w.en.toUpperCase();
     await markResult(accountId, w.id, ok);
     setFeedback(ok ? { ok: true, text: '❤️ ถูกต้อง!' } : { ok: false, text: '❌ คำตอบคือ ' + w.en });
-    setAnswered(true);
-    if (ok) setCorrect((c) => c + 1);
+     setAnswered(true);
+    if (ok) {
+      setCorrect((c) => c + 1);
+      setTimeout(next, 800);
+    }
   }
   function next() { setIdx((i) => i + 1); setValue(''); setFeedback(null); setAnswered(false); }
 
