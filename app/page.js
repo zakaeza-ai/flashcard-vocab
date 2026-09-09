@@ -117,9 +117,18 @@ export default function Home() {
         </div><div className="go">›</div>
       </Link>
 
+      <Link href="/leaderboard" className="menu-card">
+        <div className="row"><div className="icon">🏆</div>
+          <div><div className="t">อันดับคะแนน</div><div className="d">ดูว่าใครท่องศัพท์ได้เยอะที่สุด</div></div>
+        </div><div className="go">›</div>
+      </Link>
+
       <div className="stat-row">
         <div className="stat-box"><div className="n">❤️ {learnedCount}</div><div className="l">คำที่จำได้</div></div>
         <div className="stat-box"><div className="n">🔥 {appState.current_streak}</div><div className="l">วันติดต่อกัน</div></div>
+      </div>
+      <div className="stat-row" style={{ marginTop: 10 }}>
+        <div className="stat-box"><div className="n">⭐ Lv.{Math.floor(learnedCount / 100) + 1}</div><div className="l">เลเวลปัจจุบัน</div></div>
       </div>
 
       <button className="review-mark-btn" style={{ display: 'block', margin: '20px auto 0' }} onClick={logout}>

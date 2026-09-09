@@ -162,6 +162,12 @@ function ListenType({ accountId, onExit }) {
         onKeyDown={(e) => e.key === 'Enter' && !answered && check()}
         placeholder="พิมพ์คำศัพท์ที่ได้ยิน"
         disabled={answered}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck="false"
+        data-lpignore="true"
+        data-1p-ignore="true"
       />
       {feedback && <div className={'feedback ' + (feedback.ok ? 'ok' : 'bad')}>{feedback.text}</div>}
       <button className="primary-btn" style={{ marginTop: 16 }} onClick={answered ? next : check}>
@@ -246,6 +252,12 @@ function MeaningType({ accountId, onExit }) {
         onKeyDown={(e) => e.key === 'Enter' && !answered && check()}
         placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ"
         disabled={answered}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck="false"
+        data-lpignore="true"
+        data-1p-ignore="true"
       />
       {feedback && <div className={'feedback ' + (feedback.ok ? 'ok' : 'bad')}>{feedback.text}</div>}
       <button className="primary-btn" style={{ marginTop: 16 }} onClick={answered ? next : check}>
