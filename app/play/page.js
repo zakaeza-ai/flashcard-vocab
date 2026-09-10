@@ -7,6 +7,7 @@ import { useAccount } from '../../lib/accountContext';
 
 const SESSION_SIZE = 20;
 const ROUND_SECONDS = 60;
+const SHOW_SOLO_MODE = false; // ซ่อนตัวเลือก "เล่นคนเดียว" ไว้ก่อน (ยังทดสอบไม่ได้เพราะ iPhone ไม่รองรับฟังเสียง) — เปลี่ยนเป็น true เพื่อเปิดกลับมา
 const TILT_THRESHOLD = 22; // องศาที่ต้องเอียงเกินถึงจะนับว่า "ตัดสินแล้ว"
 const NEUTRAL_ZONE = 8;    // ต้องเอียงกลับมาใกล้ 0 ก่อนถึงจะนับครั้งต่อไปได้ (กันเด้งซ้ำ)
 
@@ -319,30 +320,32 @@ function PlayGame({ pool, onExit }) {
             <div className="emoji">📱</div>
             <div className="title">พร้อมหรือยัง?</div>
             <div className="sub" style={{ marginTop: 8 }}>
-              {mode === 'friend'
-                ? <>หมุนมือถือเป็นแนวนอน แล้วยกไว้ที่หน้าผาก<br />ให้เพื่อนบอกความหมาย ทายคำศัพท์ให้ถูก</>
-                : <>หมุนมือถือเป็นแนวนอน หันจอเข้าหาตัวเอง<br />ฟังเสียงคำศัพท์ ทายจากความหมายที่เห็น</>}
+              {SHOW_SOLO_MODE && mode === 'solo'
+                ? <>หมุนมือถือเป็นแนวนอน หันจอเข้าหาตัวเอง<br />ฟังเสียงคำศัพท์ ทายจากความหมายที่เห็น</>
+                : <>หมุนมือถือเป็นแนวนอน แล้วยกไว้ที่หน้าผาก<br />ให้เพื่อนบอกความหมาย ทายคำศัพท์ให้ถูก</>}
               <br />
               ทายถูก เอียงขวา · ทายไม่ได้ เอียงซ้าย
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 10, width: '100%', marginTop: 20 }}>
-            <button
-              className="ghost-btn"
-              style={{ marginTop: 0, background: mode === 'friend' ? 'var(--coral)' : undefined, color: mode === 'friend' ? 'white' : undefined }}
-              onClick={() => setMode('friend')}
-            >
-              👥 เล่นกับเพื่อน
-            </button>
-            <button
-              className="ghost-btn"
-              style={{ marginTop: 0, background: mode === 'solo' ? 'var(--coral)' : undefined, color: mode === 'solo' ? 'white' : undefined }}
-              onClick={() => setMode('solo')}
-            >
-              🙋 เล่นคนเดียว
-            </button>
-          </div>
+          {SHOW_SOLO_MODE && (
+            <div style={{ display: 'flex', gap: 10, width: '100%', marginTop: 20 }}>
+              <button
+                className="ghost-btn"
+                style={{ marginTop: 0, background: mode === 'friend' ? 'var(--coral)' : undefined, color: mode === 'friend' ? 'white' : undefined }}
+                onClick={() => setMode('friend')}
+              >
+                👥 เล่นกับเพื่อน
+              </button>
+              <button
+                className="ghost-btn"
+                style={{ marginTop: 0, background: mode === 'solo' ? 'var(--coral)' : undefined, color: mode === 'solo' ? 'white' : undefined }}
+                onClick={() => setMode('solo')}
+              >
+                🙋 เล่นคนเดียว
+              </button>
+            </div>
+          )}
 
           <button className="primary-btn" style={{ marginTop: 16 }} onClick={startRound}>
             🚀 เริ่มเกม {ROUND_SECONDS} วินาที
