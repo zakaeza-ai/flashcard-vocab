@@ -246,11 +246,12 @@ function PlayGame({ pool, onExit }) {
   function handleOrientation(event) {
     // ใช้ gamma (เอียงซ้าย-ขวา) เป็นหลัก และปรับตามการหมุนจอถ้าเบราว์เซอร์รายงาน screen.orientation
     let tiltValue = event.gamma;
-    const orientType = (typeof screen !== 'undefined' && screen.orientation && screen.orientation.type) || '';
-    if (orientType.startsWith('landscape')) {
-      // ตอนจอหมุนเป็นแนวนอน แกนซ้าย-ขวาจริงจะไปอยู่ที่ beta แทน
-      tiltValue = orientType === 'landscape-primary' ? event.beta : -event.beta;
-    }
+      const orientType = getOrientationType();
+  let tiltValue = event.gamma;
+  if (orientType.startsWith('landscape')) {
+    tiltValue = orientType === 'landscape-primary' ? event.beta : -event.beta;
+  }
+  tiltValue = -tiltValue; // ยืนยันจากการทดสอบจริงแล้วว่าทิศทางกลับข้างกัน (เอียงขวาจริง = ค่าติดลบ) เลยกลับเครื่องหมายให้ตรง
     if (tiltValue == null) return;
 
     // friend = หันจอออกนอกตัว (ค่าดิบตรงอยู่แล้ว) / solo = หันจอเข้าตัวเอง (ต้องกลับเครื่องหมาย)
@@ -499,10 +500,12 @@ function PlayGame({ pool, onExit }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 14, width: '100%', maxWidth: 640, flexShrink: 0 }}>
-        <button className="judge-btn correct" style={{ flex: 1 }} onClick={() => goNext(true)}>✅ ถูก</button>
-        <button className="judge-btn wrong" style={{ flex: 1 }} onClick={() => goNext(false)}>❌ ผิด</button>
-      </div>
+            {!sensorSupported && (
+        <div style={{ display: 'flex', gap: 16, marginTop: 14, width: '100%', maxWidth: 640, flexShrink: 0 }}>
+          <button className="judge-btn correct" style={{ flex: 1 }} onClick={() => goNext(true)}>✅ ถูก</button>
+          <button className="judge-btn wrong" style={{ flex: 1 }} onClick={() => goNext(false)}>❌ ผิด</button>
+        </div>
+      )}
     </div>
   );
 }
