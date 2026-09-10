@@ -10,7 +10,20 @@ const ROUND_SECONDS = 60;
 const SHOW_SOLO_MODE = false; // ซ่อนตัวเลือก "เล่นคนเดียว" ไว้ก่อน (ยังทดสอบไม่ได้เพราะ iPhone ไม่รองรับฟังเสียง) — เปลี่ยนเป็น true เพื่อเปิดกลับมา
 const TILT_THRESHOLD = 22; // องศาที่ต้องเอียงเกินถึงจะนับว่า "ตัดสินแล้ว"
 const NEUTRAL_ZONE = 8;    // ต้องเอียงกลับมาใกล้ 0 ก่อนถึงจะนับครั้งต่อไปได้ (กันเด้งซ้ำ)
+const MIN_TILT_GAP_MS = 500; // ต้องห่างจากครั้งก่อนอย่างน้อยเท่านี้ กันสัญญาณสั่นตัดสินซ้ำเร็วเกิน
+const START_GRACE_MS = 700;  // ไม่รับค่าเอียงช่วงแรกหลังกดเริ่ม กันมือถือเอียงค้างจากตอนกดปุ่ม
 
+function getOrientationType() {
+  if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.type) {
+    return screen.orientation.type;
+  }
+  if (typeof window !== 'undefined' && typeof window.orientation === 'number') {
+    if (window.orientation === 90) return 'landscape-primary';
+    if (window.orientation === -90 || window.orientation === 270) return 'landscape-secondary';
+  }
+  if (typeof window !== 'undefined' && window.innerWidth > window.innerHeight) return 'landscape-primary';
+  return 'portrait-primary';
+}
 function getSpeechRecognitionCtor() {
   if (typeof window === 'undefined') return null;
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -149,6 +162,7 @@ function PlayGame({ pool, onExit }) {
   const [sensorSupported, setSensorSupported] = useState(true);
   const [listening, setListening] = useState(false);
   const [typedLetters, setTypedLetters] = useState([]);
+  const [debugInfo, setDebugInfo] = useState('');
 
   const armedRef = useRef(true); // true = พร้อมรับการเอียงครั้งต่อไป (ต้องกลับมาที่ neutral zone ก่อน)
   const timerRef = useRef(null);
@@ -156,7 +170,10 @@ function PlayGame({ pool, onExit }) {
   const recognitionRef = useRef(null);
   const wordRef = useRef(null); // ให้ onresult อ้างคำปัจจุบันได้เสมอ ไม่ใช้ค่าเก่าจาก closure
   const idxRef = useRef(0);
-  const typedLettersRef = useRef([]); // แหล่งความจริงของตัวอักษรที่สะกดมาแล้ว (sync ไม่รอ re-render)
+    const typedLettersRef = useRef([]); // แหล่งความจริงของตัวอักษรที่สะกดมาแล้ว (sync ไม่รอ re-render)
+  const lastTriggerRef = useRef(0);   // เวลาที่ตัดสินครั้งล่าสุด กันตัดสินซ้ำเร็วเกิน
+  const startedAtRef = useRef(0);     // เวลาที่กดเริ่มเกม กันเอียงค้างจากตอนกดปุ่ม
+  const lastDebugUpdateRef = useRef(0);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
@@ -244,30 +261,37 @@ function PlayGame({ pool, onExit }) {
   }
 
   function handleOrientation(event) {
-    // ใช้ gamma (เอียงซ้าย-ขวา) เป็นหลัก และปรับตามการหมุนจอถ้าเบราว์เซอร์รายงาน screen.orientation
+    const orientType = getOrientationType();
     let tiltValue = event.gamma;
-      const orientType = getOrientationType();
-  let tiltValue = event.gamma;
-  if (orientType.startsWith('landscape')) {
-    tiltValue = orientType === 'landscape-primary' ? event.beta : -event.beta;
-  }
-  tiltValue = -tiltValue; // ยืนยันจากการทดสอบจริงแล้วว่าทิศทางกลับข้างกัน (เอียงขวาจริง = ค่าติดลบ) เลยกลับเครื่องหมายให้ตรง
-    if (tiltValue == null) return;
+    if (orientType.startsWith('landscape')) {
+      tiltValue = orientType === 'landscape-primary' ? event.beta : -event.beta;
+    }
+    tiltValue = -tiltValue; // ยืนยันจากการทดสอบจริงแล้วว่าทิศทางกลับข้างกัน (เอียงขวาจริง = ค่าติดลบ) เลยกลับเครื่องหมายให้ตรง
 
-    // friend = หันจอออกนอกตัว (ค่าดิบตรงอยู่แล้ว) / solo = หันจอเข้าตัวเอง (ต้องกลับเครื่องหมาย)
+    if (Date.now() - lastDebugUpdateRef.current > 150) {
+      lastDebugUpdateRef.current = Date.now();
+      setDebugInfo(`β=${event.beta?.toFixed(0)} γ=${event.gamma?.toFixed(0)} orient=${orientType || '?'} tilt=${tiltValue?.toFixed?.(0)}`);
+    }
+
+    if (tiltValue == null) return;
+    if (Date.now() - startedAtRef.current < START_GRACE_MS) return;
+
     if (modeRef.current === 'solo') tiltValue = -tiltValue;
 
     if (!armedRef.current) {
-      // รอให้กลับมาใกล้ 0 ก่อนถึงจะยอมรับการเอียงครั้งใหม่
       if (Math.abs(tiltValue) < NEUTRAL_ZONE) armedRef.current = true;
       return;
     }
 
+    if (Date.now() - lastTriggerRef.current < MIN_TILT_GAP_MS) return;
+
     if (tiltValue > TILT_THRESHOLD) {
       armedRef.current = false;
+      lastTriggerRef.current = Date.now();
       goNext(true);
     } else if (tiltValue < -TILT_THRESHOLD) {
       armedRef.current = false;
+      lastTriggerRef.current = Date.now();
       goNext(false);
     }
   }
@@ -282,6 +306,9 @@ function PlayGame({ pool, onExit }) {
     } catch (e) {
       setSensorSupported(false);
     }
+        armedRef.current = true;
+    lastTriggerRef.current = 0;
+    startedAtRef.current = Date.now();
     window.addEventListener('deviceorientation', handleOrientation);
     setPhase('playing');
     setTimeLeft(ROUND_SECONDS);
@@ -411,6 +438,12 @@ function PlayGame({ pool, onExit }) {
         <span style={{ background: 'rgba(0,0,0,0.25)', padding: '6px 18px', borderRadius: 999 }}>✅ {score}</span>
         <span style={{ background: 'rgba(0,0,0,0.25)', padding: '6px 18px', borderRadius: 999 }}>⏱ {timeLeft} วิ</span>
       </div>
+
+          {debugInfo && (
+        <div style={{ position: 'absolute', top: 60, left: 16, right: 16, color: 'white', fontSize: '0.7rem', textAlign: 'center', fontFamily: 'monospace', opacity: 0.85 }}>
+          {debugInfo}
+        </div>
+      )}
 
       {!sensorSupported && (
         <div style={{ position: 'absolute', bottom: 90, color: 'var(--ink)', fontFamily: 'var(--font-sarabun)', fontSize: '0.8rem', textAlign: 'center', padding: '0 20px', background: 'rgba(255,255,255,0.6)', borderRadius: 12 }}>
