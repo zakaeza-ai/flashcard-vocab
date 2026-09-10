@@ -19,6 +19,44 @@ function normalizeSpeech(text) {
   return text.trim().toUpperCase().replace(/[^A-Z]/g, '');
 }
 
+// เสียงพูดตัวอักษรบางตัวมักถูกแปลงเป็นคำอื่นที่ออกเสียงคล้ายกัน ตารางนี้ช่วยแปลงกลับ
+const LETTER_SOUND_MAP = {
+  A: 'A', AY: 'A', HEY: 'A',
+  B: 'B', BE: 'B', BEE: 'B',
+  C: 'C', SEE: 'C', SEA: 'C',
+  D: 'D', DEE: 'D',
+  E: 'E', EE: 'E',
+  F: 'F', EFF: 'F', EF: 'F',
+  G: 'G', GEE: 'G',
+  H: 'H', AITCH: 'H', HAICH: 'H',
+  I: 'I', EYE: 'I',
+  J: 'J', JAY: 'J',
+  K: 'K', KAY: 'K',
+  L: 'L', EL: 'L', ELL: 'L',
+  M: 'M', EM: 'M',
+  N: 'N', EN: 'N',
+  O: 'O', OH: 'O',
+  P: 'P', PEA: 'P', PEE: 'P',
+  Q: 'Q', CUE: 'Q', QUEUE: 'Q',
+  R: 'R', ARE: 'R', AR: 'R',
+  S: 'S', ES: 'S', ESS: 'S',
+  T: 'T', TEA: 'T', TEE: 'T',
+  U: 'U', YOU: 'U', EWE: 'U',
+  V: 'V', VEE: 'V',
+  W: 'W', DOUBLEU: 'W',
+  X: 'X', EX: 'X', ECKS: 'X',
+  Y: 'Y', WHY: 'Y',
+  Z: 'Z', ZEE: 'Z', ZED: 'Z',
+};
+
+function tokenToLetter(token) {
+  const clean = token.trim().toUpperCase().replace(/[^A-Z]/g, '');
+  if (!clean) return null;
+  if (LETTER_SOUND_MAP[clean]) return LETTER_SOUND_MAP[clean];
+  if (clean.length === 1) return clean;
+  return null; // ฟังไม่ออกว่าเป็นตัวไหน ข้ามไป
+}
+
 function speak(text) {
   try {
     window.speechSynthesis.cancel();
@@ -109,7 +147,7 @@ function PlayGame({ pool, onExit }) {
   const [tiltFlash, setTiltFlash] = useState(null); // 'right' | 'left' | null — ให้จอวาบสีตอนตัดสิน
   const [sensorSupported, setSensorSupported] = useState(true);
   const [listening, setListening] = useState(false);
-  const [heardText, setHeardText] = useState('');
+  const [typedLetters, setTypedLetters] = useState([]);
 
   const armedRef = useRef(true); // true = พร้อมรับการเอียงครั้งต่อไป (ต้องกลับมาที่ neutral zone ก่อน)
   const timerRef = useRef(null);
@@ -117,12 +155,13 @@ function PlayGame({ pool, onExit }) {
   const recognitionRef = useRef(null);
   const wordRef = useRef(null); // ให้ onresult อ้างคำปัจจุบันได้เสมอ ไม่ใช้ค่าเก่าจาก closure
   const idxRef = useRef(0);
+  const typedLettersRef = useRef([]); // แหล่งความจริงของตัวอักษรที่สะกดมาแล้ว (sync ไม่รอ re-render)
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
   const w = pool[idx % pool.length];
 
-  useEffect(() => { wordRef.current = w; setHeardText(''); }, [w]);
+  useEffect(() => { wordRef.current = w; typedLettersRef.current = []; setTypedLetters([]); }, [w]);
   useEffect(() => { idxRef.current = idx; }, [idx]);
 
   useEffect(() => {
@@ -148,21 +187,40 @@ function PlayGame({ pool, onExit }) {
     if (!Ctor) return;
     const recognition = new Ctor();
     recognition.lang = 'en-US';
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = false;
     recognition.onresult = (event) => {
-      const transcript = event.results[event.results.length - 1][0].transcript;
-      setHeardText(transcript);
-      const said = normalizeSpeech(transcript);
-      const target = normalizeSpeech(wordRef.current.en);
-      if (said === target || said.includes(target)) {
-        goNext(true);
+      const target = normalizeSpeech(wordRef.current.en).split('');
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (!result.isFinal) continue;
+        const transcript = result[0].transcript;
+        const tokens = transcript.trim().split(/\s+/);
+        for (const token of tokens) {
+          if (typedLettersRef.current.length >= target.length) break;
+          const letter = tokenToLetter(token);
+          if (!letter) continue;
+          typedLettersRef.current = [...typedLettersRef.current, letter];
+        }
       }
-      // ถ้าไม่ตรง ปล่อยให้ onend สั่งฟังใหม่อัตโนมัติ ให้ลองพูดอีกครั้งได้
+      setTypedLetters([...typedLettersRef.current]);
+
+      if (typedLettersRef.current.length >= target.length) {
+        const allCorrect = target.every((ch, i) => typedLettersRef.current[i] === ch);
+        if (allCorrect) {
+          setTimeout(() => goNext(true), 400); // หน่วงนิดให้เห็นสีเขียวครบก่อนเปลี่ยนคำ
+        } else {
+          // สะกดครบแต่ผิดบางตัว -> โชว์สีแดงแป๊บนึงแล้วเคลียร์ให้ลองสะกดใหม่
+          setTimeout(() => {
+            typedLettersRef.current = [];
+            setTypedLetters([]);
+          }, 900);
+        }
+      }
     };
     recognition.onend = () => {
       setListening(false);
-      // ยังอยู่คำเดิม (ยังไม่ได้เปลี่ยนคำ) แปลว่ายังไม่ถูก -> ฟังต่ออัตโนมัติ
+      // ยังอยู่คำเดิม (ยังไม่ได้เปลี่ยนคำ) แปลว่ายังสะกดไม่ครบ/ไม่ถูก -> ฟังต่ออัตโนมัติ
       if (modeRef.current === 'solo') {
         try { recognition.start(); setListening(true); } catch (e) {}
       }
@@ -390,17 +448,38 @@ function PlayGame({ pool, onExit }) {
         )}
         {mode === 'solo' && (
           <>
-            <div style={{ fontSize: '3rem' }}>{listening ? '🎤' : '🔊'}</div>
+            <div style={{ fontSize: '2.4rem' }}>{listening ? '🎤' : '🔊'}</div>
             {listening && (
               <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.85rem', color: 'var(--ink-soft)' }}>
-                กำลังฟัง... พูดคำศัพท์ออกมาได้เลย
+                กำลังฟัง... สะกดคำศัพท์ทีละตัวอักษร
               </div>
             )}
-            {heardText ? (
-              <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.8rem', color: 'var(--ink-soft)' }}>
-                ได้ยิน: {heardText}
-              </div>
-            ) : null}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {w.en.split('').map((targetChar, i) => {
+                const said = typedLetters[i];
+                const isCorrect = said && said === targetChar.toUpperCase();
+                const isWrong = said && said !== targetChar.toUpperCase();
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      width: 36,
+                      height: 44,
+                      borderRadius: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '1.2rem',
+                      background: isCorrect ? '#DFF3E8' : isWrong ? '#FBE2E4' : 'var(--paper-edge)',
+                      color: isCorrect ? '#1F8A57' : isWrong ? '#D64550' : 'var(--ink-soft)',
+                    }}
+                  >
+                    {said || ''}
+                  </div>
+                );
+              })}
+            </div>
           </>
         )}
         <div
