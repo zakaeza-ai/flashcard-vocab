@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useAccount } from '../../lib/accountContext';
-import { getPlayDeck } from '../../lib/spotItDeck';
+import { getPlayDeck, buildSymbolPool } from '../../lib/spotItDeck';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // ตัดตัวที่อ่านสับสน (I, L, O, 0, 1) ออก
 const MAX_PLAYERS = 4;
@@ -157,7 +157,15 @@ export default function SpotItSetup() {
   async function createRoom() {
     setBusy(true);
     setError(null);
-    const deck = getPlayDeck(32);
+
+    const { data: allWords } = await supabase.from('words').select('id, en, mean');
+    if (!allWords || allWords.length < 57) {
+      setError('คำศัพท์ในระบบมีไม่พอสร้างเกม (ต้องมีอย่างน้อย 57 คำ)');
+      setBusy(false);
+      return;
+    }
+    const symbolPool = buildSymbolPool(allWords);
+    const deck = getPlayDeck(symbolPool, 32);
 
     let created = null;
     for (let attempt = 0; attempt < 5 && !created; attempt++) {
