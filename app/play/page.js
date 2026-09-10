@@ -92,6 +92,7 @@ export default function PlaySetup() {
 
 function PlayGame({ pool, onExit }) {
   const [phase, setPhase] = useState('ready'); // ready | playing | done
+  const [mode, setMode] = useState('friend'); // friend (หันจอออก) | solo (หันจอเข้าตัวเอง)
   const [idx, setIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
@@ -101,6 +102,9 @@ function PlayGame({ pool, onExit }) {
 
   const armedRef = useRef(true); // true = พร้อมรับการเอียงครั้งต่อไป (ต้องกลับมาที่ neutral zone ก่อน)
   const timerRef = useRef(null);
+  const modeRef = useRef(mode); // handleOrientation อ่านค่านี้แทน state เพราะ closure ของ event listener ไม่รีเฟรช
+
+  useEffect(() => { modeRef.current = mode; }, [mode]);
 
   const w = pool[idx % pool.length];
 
@@ -126,7 +130,8 @@ function PlayGame({ pool, onExit }) {
     }
     if (tiltValue == null) return;
 
-    tiltValue = -tiltValue;
+    // friend = หันจอออกนอกตัว (ค่าดิบตรงอยู่แล้ว) / solo = หันจอเข้าตัวเอง (ต้องกลับเครื่องหมาย)
+    if (modeRef.current === 'solo') tiltValue = -tiltValue;
 
     if (!armedRef.current) {
       // รอให้กลับมาใกล้ 0 ก่อนถึงจะยอมรับการเอียงครั้งใหม่
@@ -188,12 +193,32 @@ function PlayGame({ pool, onExit }) {
             <div className="emoji">📱</div>
             <div className="title">พร้อมหรือยัง?</div>
             <div className="sub" style={{ marginTop: 8 }}>
-              หมุนมือถือเป็นแนวนอน แล้วยกไว้ที่หน้าผาก<br />
-              ให้เพื่อนบอกความหมาย ทายคำศัพท์ให้ถูก<br />
+              {mode === 'friend'
+                ? <>หมุนมือถือเป็นแนวนอน แล้วยกไว้ที่หน้าผาก<br />ให้เพื่อนบอกความหมาย ทายคำศัพท์ให้ถูก</>
+                : <>หมุนมือถือเป็นแนวนอน หันจอเข้าหาตัวเอง<br />ฟังเสียงคำศัพท์ ทายจากความหมายที่เห็น</>}
+              <br />
               ทายถูก เอียงขวา · ทายไม่ได้ เอียงซ้าย
             </div>
           </div>
-          <button className="primary-btn" style={{ marginTop: 26 }} onClick={startRound}>
+
+          <div style={{ display: 'flex', gap: 10, width: '100%', marginTop: 20 }}>
+            <button
+              className="ghost-btn"
+              style={{ marginTop: 0, background: mode === 'friend' ? 'var(--coral)' : undefined, color: mode === 'friend' ? 'white' : undefined }}
+              onClick={() => setMode('friend')}
+            >
+              👥 เล่นกับเพื่อน
+            </button>
+            <button
+              className="ghost-btn"
+              style={{ marginTop: 0, background: mode === 'solo' ? 'var(--coral)' : undefined, color: mode === 'solo' ? 'white' : undefined }}
+              onClick={() => setMode('solo')}
+            >
+              🙋 เล่นคนเดียว
+            </button>
+          </div>
+
+          <button className="primary-btn" style={{ marginTop: 16 }} onClick={startRound}>
             🚀 เริ่มเกม {ROUND_SECONDS} วินาที
           </button>
         </div>
@@ -280,19 +305,24 @@ function PlayGame({ pool, onExit }) {
           cursor: 'pointer',
         }}
       >
-        <div
-          style={{
-            fontFamily: 'inherit',
-            fontWeight: 800,
-            fontSize: 'clamp(2.2rem, 10vw, 5rem)',
-            color: 'var(--ink)',
-            textAlign: 'center',
-            wordBreak: 'break-word',
-            lineHeight: 1.1,
-          }}
-        >
-          {w.en}
-        </div>
+        {mode === 'friend' && (
+          <div
+            style={{
+              fontFamily: 'inherit',
+              fontWeight: 800,
+              fontSize: 'clamp(2.2rem, 10vw, 5rem)',
+              color: 'var(--ink)',
+              textAlign: 'center',
+              wordBreak: 'break-word',
+              lineHeight: 1.1,
+            }}
+          >
+            {w.en}
+          </div>
+        )}
+        {mode === 'solo' && (
+          <div style={{ fontSize: '3rem' }}>🔊</div>
+        )}
         <div
           style={{
             fontFamily: 'var(--font-sarabun)',
