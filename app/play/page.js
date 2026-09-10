@@ -308,8 +308,8 @@ function PlayGame({ pool, onExit }) {
       </div>
 
       <div style={{ display: 'flex', gap: 16, marginTop: 14, width: '100%', maxWidth: 640, flexShrink: 0 }}>
-        <button className="judge-btn wrong" style={{ flex: 1 }} onClick={() => goNext(false)}>❌ ผิด</button>
         <button className="judge-btn correct" style={{ flex: 1 }} onClick={() => goNext(true)}>✅ ถูก</button>
+        <button className="judge-btn wrong" style={{ flex: 1 }} onClick={() => goNext(false)}>❌ ผิด</button>
       </div>
     </div>
   );
