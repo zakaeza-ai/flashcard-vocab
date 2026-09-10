@@ -32,10 +32,10 @@ function shuffle(arr) {
 // โชว์สัญลักษณ์ตาม variant ที่สุ่มไว้ตอนสร้างสำรับ — รูป / คำอังกฤษ / คำไทย
 function SymbolFace({ s }) {
   if (s.variant === 'image') {
-    return <img src={s.imageUrl} alt="" style={{ width: 44, height: 44 }} />;
+    return <img src={s.imageUrl} alt="" style={{ width: 56, height: 56 }} />;
   }
   const text = s.variant === 'th' ? s.mean : s.en;
-  return <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--ink)' }}>{text}</div>;
+  return <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.2 }}>{text}</div>;
 }
 function symbolLayout(i, total) {
   const angle = (i * (360 / total) * Math.PI) / 180;
@@ -464,7 +464,7 @@ export default function SpotItSetup() {
            {(centerCard || []).map((s, i) => {
           const { x, y, rotate } = symbolLayout(i, (centerCard || []).length);
           return (
-            <div key={s.id} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`, textAlign: 'center', width: 80 }}>
+            <div key={s.id} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`, textAlign: 'center', width: 92 }}>
               <SymbolFace s={s} />
             </div>
           );
@@ -496,7 +496,7 @@ export default function SpotItSetup() {
               disabled={!isMyTurn}
               style={{
                 position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`,
-                textAlign: 'center', width: 80, background: 'none', border: 'none', cursor: isMyTurn ? 'pointer' : 'default', padding: 0,
+                textAlign: 'center', width: 92, background: 'none', border: 'none', cursor: isMyTurn ? 'pointer' : 'default', padding: 0,
               }}
             >
               <SymbolFace s={s} />
