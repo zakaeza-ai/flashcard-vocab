@@ -29,7 +29,14 @@ function shuffle(arr) {
   }
   return a;
 }
-
+// โชว์สัญลักษณ์ตาม variant ที่สุ่มไว้ตอนสร้างสำรับ — รูป / คำอังกฤษ / คำไทย
+function SymbolFace({ s }) {
+  if (s.variant === 'image') {
+    return <img src={s.imageUrl} alt="" style={{ width: 44, height: 44 }} />;
+  }
+  const text = s.variant === 'th' ? s.mean : s.en;
+  return <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--ink)' }}>{text}</div>;
+}
 function symbolLayout(i, total) {
   const angle = (i * (360 / total) * Math.PI) / 180;
   const radiusPercent = 26 + (i % 3) * 6;
@@ -213,7 +220,7 @@ export default function SpotItSetup() {
       setBusy(false);
       return;
     }
-    const deck = getPlayDeck(symbolPool, 24);
+       const deck = getPlayDeck(symbolPool, 24, level);
 
     let created = null;
     for (let attempt = 0; attempt < 5 && !created; attempt++) {
@@ -324,7 +331,7 @@ export default function SpotItSetup() {
   }
 
   const isHost = players.length > 0 && players[0].account_id === account.id;
-  const thaiFontSize = roomLevel === 1 ? '0.75rem' : '0.6rem';
+
 
   // ---------------- หน้าเมนู ----------------
   if (mode === 'menu') {
@@ -454,13 +461,11 @@ export default function SpotItSetup() {
 
       {/* การ์ดกลาง */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', maxWidth: 320, margin: '0 auto', background: 'var(--paper)', borderRadius: '50%', boxShadow: '0 10px 24px rgba(91,68,54,0.15)' }}>
-        {(centerCard || []).map((s, i) => {
-  const { x, y, rotate } = symbolLayout(i, (centerCard || []).length);
+           {(centerCard || []).map((s, i) => {
+          const { x, y, rotate } = symbolLayout(i, (centerCard || []).length);
           return (
-            <div key={s.id} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`, textAlign: 'center', width: 76 }}>
-              <img src={s.imageUrl} alt="" style={{ width: 40, height: 40 }} />
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--ink)' }}>{s.en}</div>
-              <div style={{ fontSize: thaiFontSize, color: 'var(--ink-soft)' }}>{s.mean}</div>
+            <div key={s.id} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`, textAlign: 'center', width: 80 }}>
+              <SymbolFace s={s} />
             </div>
           );
         })}
@@ -482,8 +487,8 @@ export default function SpotItSetup() {
           opacity: isMyTurn ? 1 : 0.6,
         }}
       >
-       {(myTopCard || []).map((s, i) => {
-  const { x, y, rotate } = symbolLayout(i, (myTopCard || []).length);
+           {(myTopCard || []).map((s, i) => {
+          const { x, y, rotate } = symbolLayout(i, (myTopCard || []).length);
           return (
             <button
               key={s.id}
@@ -491,12 +496,10 @@ export default function SpotItSetup() {
               disabled={!isMyTurn}
               style={{
                 position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`,
-                textAlign: 'center', width: 76, background: 'none', border: 'none', cursor: isMyTurn ? 'pointer' : 'default', padding: 0,
+                textAlign: 'center', width: 80, background: 'none', border: 'none', cursor: isMyTurn ? 'pointer' : 'default', padding: 0,
               }}
             >
-              <img src={s.imageUrl} alt="" style={{ width: 40, height: 40 }} />
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--ink)' }}>{s.en}</div>
-              <div style={{ fontSize: thaiFontSize, color: 'var(--ink-soft)' }}>{s.mean}</div>
+              <SymbolFace s={s} />
             </button>
           );
         })}
