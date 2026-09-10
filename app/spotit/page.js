@@ -91,8 +91,12 @@ export default function SpotItSetup() {
       })
       .subscribe();
 
+    // ระบบสำรอง: ดึงข้อมูลซ้ำทุก 3 วิ เผื่อเรียลไทม์หลุด (พบบ่อยบนมือถือตอนสลับแอป/ล็อกจอ)
+    const pollTimer = setInterval(loadAll, 3000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollTimer);
     };
   }, [mode, roomId]);
 
