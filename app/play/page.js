@@ -10,6 +10,15 @@ const ROUND_SECONDS = 60;
 const TILT_THRESHOLD = 22; // องศาที่ต้องเอียงเกินถึงจะนับว่า "ตัดสินแล้ว"
 const NEUTRAL_ZONE = 8;    // ต้องเอียงกลับมาใกล้ 0 ก่อนถึงจะนับครั้งต่อไปได้ (กันเด้งซ้ำ)
 
+function getSpeechRecognitionCtor() {
+  if (typeof window === 'undefined') return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function normalizeSpeech(text) {
+  return text.trim().toUpperCase().replace(/[^A-Z]/g, '');
+}
+
 function speak(text) {
   try {
     window.speechSynthesis.cancel();
@@ -79,7 +88,7 @@ export default function PlaySetup() {
         <Link href="/" className="back-btn">←</Link>
         <div className="title">เล่นกับเพื่อน</div>
       </div>
-      <div style={{ fontFamily: 'var(--font-sarabun)', color: '#DCEFE9', fontSize: '0.92rem', marginBottom: 14, lineHeight: 1.6 }}>
+      <div style={{ fontFamily: 'var(--font-sarabun)', color: 'var(--ink-soft)', fontSize: '0.92rem', marginBottom: 14, lineHeight: 1.6 }}>
         📱 ถือมือถือแนวนอนไว้ที่หน้าผาก ให้เพื่อนเห็นคำ แล้วบอกให้คุณทาย —
         ตอบถูก <b>เอียงขวา</b> ได้แต้ม, ตอบผิด <b>เอียงซ้าย</b> เปลี่ยนคำ มีเวลา {ROUND_SECONDS} วินาที
       </div>
@@ -99,18 +108,73 @@ function PlayGame({ pool, onExit }) {
   const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS);
   const [tiltFlash, setTiltFlash] = useState(null); // 'right' | 'left' | null — ให้จอวาบสีตอนตัดสิน
   const [sensorSupported, setSensorSupported] = useState(true);
+  const [listening, setListening] = useState(false);
+  const [heardText, setHeardText] = useState('');
 
   const armedRef = useRef(true); // true = พร้อมรับการเอียงครั้งต่อไป (ต้องกลับมาที่ neutral zone ก่อน)
   const timerRef = useRef(null);
   const modeRef = useRef(mode); // handleOrientation อ่านค่านี้แทน state เพราะ closure ของ event listener ไม่รีเฟรช
+  const recognitionRef = useRef(null);
+  const wordRef = useRef(null); // ให้ onresult อ้างคำปัจจุบันได้เสมอ ไม่ใช้ค่าเก่าจาก closure
+  const idxRef = useRef(0);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
   const w = pool[idx % pool.length];
 
+  useEffect(() => { wordRef.current = w; setHeardText(''); }, [w]);
+  useEffect(() => { idxRef.current = idx; }, [idx]);
+
   useEffect(() => {
     if (phase === 'playing') speak(w.en);
   }, [idx, phase]);
+
+  // โหมดเล่นคนเดียว + เบราว์เซอร์รองรับฟังเสียง -> เริ่มฟังใหม่ทุกครั้งที่เปลี่ยนคำ
+  useEffect(() => {
+    if (phase !== 'playing' || mode !== 'solo') return;
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) return;
+    startListening();
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null; // กันไม่ให้ auto-restart ตอน cleanup
+        recognitionRef.current.stop();
+      }
+    };
+  }, [idx, phase, mode]);
+
+  function startListening() {
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) return;
+    const recognition = new Ctor();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = event.results[event.results.length - 1][0].transcript;
+      setHeardText(transcript);
+      const said = normalizeSpeech(transcript);
+      const target = normalizeSpeech(wordRef.current.en);
+      if (said === target || said.includes(target)) {
+        goNext(true);
+      }
+      // ถ้าไม่ตรง ปล่อยให้ onend สั่งฟังใหม่อัตโนมัติ ให้ลองพูดอีกครั้งได้
+    };
+    recognition.onend = () => {
+      setListening(false);
+      // ยังอยู่คำเดิม (ยังไม่ได้เปลี่ยนคำ) แปลว่ายังไม่ถูก -> ฟังต่ออัตโนมัติ
+      if (modeRef.current === 'solo') {
+        try { recognition.start(); setListening(true); } catch (e) {}
+      }
+    };
+    recognition.onerror = (event) => {
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        recognitionRef.current = null; // ปิดระบบฟังถาวรถ้าไม่ได้รับสิทธิ์ไมค์
+      }
+    };
+    recognitionRef.current = recognition;
+    try { recognition.start(); setListening(true); } catch (e) {}
+  }
 
   function goNext(ok) {
     setScore((s) => s + (ok ? 1 : 0));
@@ -166,6 +230,10 @@ function PlayGame({ pool, onExit }) {
         if (t <= 1) {
           clearInterval(timerRef.current);
           window.removeEventListener('deviceorientation', handleOrientation);
+          if (recognitionRef.current) {
+            recognitionRef.current.onend = null;
+            recognitionRef.current.stop();
+          }
           setPhase('done');
           return 0;
         }
@@ -283,7 +351,7 @@ function PlayGame({ pool, onExit }) {
       </div>
 
       {!sensorSupported && (
-        <div style={{ position: 'absolute', bottom: 90, color: '#FFD23F', fontFamily: 'var(--font-sarabun)', fontSize: '0.8rem', textAlign: 'center', padding: '0 20px' }}>
+        <div style={{ position: 'absolute', bottom: 90, color: 'var(--ink)', fontFamily: 'var(--font-sarabun)', fontSize: '0.8rem', textAlign: 'center', padding: '0 20px', background: 'rgba(255,255,255,0.6)', borderRadius: 12 }}>
           มือถือนี้ใช้เซนเซอร์เอียงไม่ได้ กดปุ่มด้านล่างแทนได้เลย
         </div>
       )}
@@ -321,7 +389,19 @@ function PlayGame({ pool, onExit }) {
           </div>
         )}
         {mode === 'solo' && (
-          <div style={{ fontSize: '3rem' }}>🔊</div>
+          <>
+            <div style={{ fontSize: '3rem' }}>{listening ? '🎤' : '🔊'}</div>
+            {listening && (
+              <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.85rem', color: 'var(--ink-soft)' }}>
+                กำลังฟัง... พูดคำศัพท์ออกมาได้เลย
+              </div>
+            )}
+            {heardText ? (
+              <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.8rem', color: 'var(--ink-soft)' }}>
+                ได้ยิน: {heardText}
+              </div>
+            ) : null}
+          </>
         )}
         <div
           style={{
