@@ -112,6 +112,9 @@ function PlayGame({ pool, onExit }) {
     }
     if (tiltValue == null) return;
 
+    // สลับเครื่องหมาย: ท่าเล่นจริงคือถือจอหันออกนอกตัว (หน้าจอหันไปทางเพื่อน) ไม่ใช่หันเข้าตัวเอง
+    tiltValue = -tiltValue;
+
     if (!armedRef.current) {
       // รอให้กลับมาใกล้ 0 ก่อนถึงจะยอมรับการเอียงครั้งใหม่
       if (Math.abs(tiltValue) < NEUTRAL_ZONE) armedRef.current = true;
@@ -223,9 +226,22 @@ function PlayGame({ pool, onExit }) {
         overflow: 'hidden',
       }}
     >
-      <div style={{ position: 'absolute', top: 16, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', color: 'white', fontFamily: 'var(--font-sarabun)' }}>
-        <span>✅ {score}</span>
-        <span>⏱ {timeLeft} วิ</span>
+      <div
+        style={{
+          position: 'absolute',
+          top: 'calc(14px + env(safe-area-inset-top, 0px))',
+          left: 'calc(36px + env(safe-area-inset-left, 0px))',
+          right: 'calc(36px + env(safe-area-inset-right, 0px))',
+          display: 'flex',
+          justifyContent: 'space-between',
+          color: 'white',
+          fontFamily: 'var(--font-sarabun)',
+          fontSize: '0.95rem',
+          fontWeight: 600,
+        }}
+      >
+        <span style={{ background: 'rgba(0,0,0,0.25)', padding: '4px 12px', borderRadius: 999 }}>✅ {score}</span>
+        <span style={{ background: 'rgba(0,0,0,0.25)', padding: '4px 12px', borderRadius: 999 }}>⏱ {timeLeft} วิ</span>
       </div>
 
       {!sensorSupported && (
