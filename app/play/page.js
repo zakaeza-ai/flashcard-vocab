@@ -10,6 +10,16 @@ const ROUND_SECONDS = 60;
 const TILT_THRESHOLD = 22; // องศาที่ต้องเอียงเกินถึงจะนับว่า "ตัดสินแล้ว"
 const NEUTRAL_ZONE = 8;    // ต้องเอียงกลับมาใกล้ 0 ก่อนถึงจะนับครั้งต่อไปได้ (กันเด้งซ้ำ)
 
+function speak(text) {
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.9;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -94,6 +104,10 @@ function PlayGame({ pool, onExit }) {
 
   const w = pool[idx % pool.length];
 
+  useEffect(() => {
+    if (phase === 'playing') speak(w.en);
+  }, [idx, phase]);
+
   function goNext(ok) {
     setScore((s) => s + (ok ? 1 : 0));
     if (!ok) setWrongCount((c) => c + 1);
@@ -123,10 +137,10 @@ function PlayGame({ pool, onExit }) {
 
     if (tiltValue > TILT_THRESHOLD) {
       armedRef.current = false;
-      goNext(true);
+      goNext(false);
     } else if (tiltValue < -TILT_THRESHOLD) {
       armedRef.current = false;
-      goNext(false);
+      goNext(true);
     }
   }
 
@@ -236,12 +250,12 @@ function PlayGame({ pool, onExit }) {
           justifyContent: 'space-between',
           color: 'white',
           fontFamily: 'var(--font-sarabun)',
-          fontSize: '0.95rem',
-          fontWeight: 600,
+          fontSize: '1.4rem',
+          fontWeight: 700,
         }}
       >
-        <span style={{ background: 'rgba(0,0,0,0.25)', padding: '4px 12px', borderRadius: 999 }}>✅ {score}</span>
-        <span style={{ background: 'rgba(0,0,0,0.25)', padding: '4px 12px', borderRadius: 999 }}>⏱ {timeLeft} วิ</span>
+        <span style={{ background: 'rgba(0,0,0,0.25)', padding: '6px 18px', borderRadius: 999 }}>✅ {score}</span>
+        <span style={{ background: 'rgba(0,0,0,0.25)', padding: '6px 18px', borderRadius: 999 }}>⏱ {timeLeft} วิ</span>
       </div>
 
       {!sensorSupported && (
@@ -251,6 +265,7 @@ function PlayGame({ pool, onExit }) {
       )}
 
       <div
+        onClick={() => speak(w.en)}
         style={{
           width: '100%',
           maxWidth: 640,
@@ -263,6 +278,7 @@ function PlayGame({ pool, onExit }) {
           justifyContent: 'center',
           padding: 20,
           gap: 14,
+          cursor: 'pointer',
         }}
       >
         <div
