@@ -130,7 +130,11 @@ export default function Home() {
           <div><div className="t">เล่นกับเพื่อน</div><div className="d">ทายคำศัพท์แบบเกม</div></div>
         </div><div className="go">›</div>
       </Link>
-
+    <Link href="/spotit" className="menu-card">
+         <div className="row"><div className="icon">🃏</div>
+          <div><div className="t">Spot It คำศัพท์</div><div className="d">จับคู่คำศัพท์ 2-4 คน</div></div>
+      </div><div className="go">›</div>
+</Link>
       <Link href="/review" className="menu-card">
         <div className="row"><div className="icon">🔄</div>
           <div><div className="t">คำที่ต้องทบทวน</div><div className="d">{reviewCount} คำ</div></div>
