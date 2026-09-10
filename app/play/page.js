@@ -126,6 +126,8 @@ function PlayGame({ pool, onExit }) {
     }
     if (tiltValue == null) return;
 
+    tiltValue = -tiltValue;
+
     if (!armedRef.current) {
       // รอให้กลับมาใกล้ 0 ก่อนถึงจะยอมรับการเอียงครั้งใหม่
       if (Math.abs(tiltValue) < NEUTRAL_ZONE) armedRef.current = true;
