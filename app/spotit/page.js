@@ -30,9 +30,9 @@ function shuffle(arr) {
   return a;
 }
 
-function symbolLayout(i) {
-  const angle = (i * 45 * Math.PI) / 180;
-  const radiusPercent = 26 + (i % 4) * 6;
+function symbolLayout(i, total) {
+  const angle = (i * (360 / total) * Math.PI) / 180;
+  const radiusPercent = 26 + (i % 3) * 6;
   const x = 50 + radiusPercent * Math.cos(angle);
   const y = 50 + radiusPercent * Math.sin(angle);
   let rotate = (i * 53) % 360;
@@ -455,7 +455,7 @@ export default function SpotItSetup() {
       {/* การ์ดกลาง */}
       <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', maxWidth: 320, margin: '0 auto', background: 'var(--paper)', borderRadius: '50%', boxShadow: '0 10px 24px rgba(91,68,54,0.15)' }}>
         {(centerCard || []).map((s, i) => {
-          const { x, y, rotate } = symbolLayout(i);
+  const { x, y, rotate } = symbolLayout(i, (centerCard || []).length);
           return (
             <div key={s.id} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`, textAlign: 'center', width: 76 }}>
               <img src={s.imageUrl} alt="" style={{ width: 40, height: 40 }} />
@@ -482,8 +482,8 @@ export default function SpotItSetup() {
           opacity: isMyTurn ? 1 : 0.6,
         }}
       >
-        {(myTopCard || []).map((s, i) => {
-          const { x, y, rotate } = symbolLayout(i);
+       {(myTopCard || []).map((s, i) => {
+  const { x, y, rotate } = symbolLayout(i, (myTopCard || []).length);
           return (
             <button
               key={s.id}
