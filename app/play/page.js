@@ -126,9 +126,6 @@ function PlayGame({ pool, onExit }) {
     }
     if (tiltValue == null) return;
 
-    // สลับเครื่องหมาย: ท่าเล่นจริงคือถือจอหันออกนอกตัว (หน้าจอหันไปทางเพื่อน) ไม่ใช่หันเข้าตัวเอง
-    tiltValue = -tiltValue;
-
     if (!armedRef.current) {
       // รอให้กลับมาใกล้ 0 ก่อนถึงจะยอมรับการเอียงครั้งใหม่
       if (Math.abs(tiltValue) < NEUTRAL_ZONE) armedRef.current = true;
@@ -137,10 +134,10 @@ function PlayGame({ pool, onExit }) {
 
     if (tiltValue > TILT_THRESHOLD) {
       armedRef.current = false;
-      goNext(false);
+      goNext(true);
     } else if (tiltValue < -TILT_THRESHOLD) {
       armedRef.current = false;
-      goNext(true);
+      goNext(false);
     }
   }
 
@@ -235,9 +232,9 @@ function PlayGame({ pool, onExit }) {
         alignItems: 'center',
         justifyContent: 'center',
         transition: 'background 0.2s',
-        padding: '20px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
+        padding: '16px 20px calc(28px + env(safe-area-inset-bottom, 0px))',
         boxSizing: 'border-box',
-        overflow: 'hidden',
+        overflowY: 'auto',
       }}
     >
       <div
@@ -308,7 +305,7 @@ function PlayGame({ pool, onExit }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 20, width: '100%', maxWidth: 640, flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 14, width: '100%', maxWidth: 640, flexShrink: 0 }}>
         <button className="judge-btn wrong" style={{ flex: 1 }} onClick={() => goNext(false)}>❌ ผิด</button>
         <button className="judge-btn correct" style={{ flex: 1 }} onClick={() => goNext(true)}>✅ ถูก</button>
       </div>
