@@ -10,7 +10,7 @@ const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // ตัดตัวท�
 const MAX_PLAYERS = 4;
 const MIN_PLAYERS = 2;
 const HAND_SIZE = 4;
-const TURN_SECONDS = 8;
+const TURN_SECONDS = 30;
 
 function randomCode(length = 4) {
   let out = '';
@@ -384,9 +384,9 @@ export default function SpotItSetup() {
         {(centerCard || []).map((s, i) => {
           const { x, y, rotate } = symbolLayout(i);
           return (
-            <div key={s.id} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`, textAlign: 'center', width: 56 }}>
-              <img src={s.imageUrl} alt="" style={{ width: 30, height: 30 }} />
-              <div style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--ink)' }}>{s.en}</div>
+            <div key={s.id} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`, textAlign: 'center', width: 68 }}>
+              <img src={s.imageUrl} alt="" style={{ width: 40, height: 40 }} />
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--ink)' }}>{s.en}</div>
             </div>
           );
         })}
@@ -396,18 +396,6 @@ export default function SpotItSetup() {
       <div style={{ fontFamily: 'var(--font-sarabun)', fontSize: '0.85rem', color: 'var(--ink-soft)', margin: '18px 0 8px', textAlign: 'center' }}>
         การ์ดในมือคุณ ({myPlayer ? myPlayer.hand.length : 0} ใบ) — {isMyTurn ? 'แตะสัญลักษณ์ที่ตรงกับการ์ดกลาง!' : 'รอตาคุณ...'}
       </div>
-      <div
-        style={{
-          position: 'relative',
-          width: '100%',
-          aspectRatio: '1 / 1',
-          maxWidth: 280,
-          margin: '0 auto',
-          background: isMyTurn ? 'var(--paper)' : 'var(--paper-edge)',
-          borderRadius: '50%',
-          opacity: isMyTurn ? 1 : 0.6,
-        }}
-      >
         {(myTopCard || []).map((s, i) => {
           const { x, y, rotate } = symbolLayout(i);
           return (
@@ -417,15 +405,14 @@ export default function SpotItSetup() {
               disabled={!isMyTurn}
               style={{
                 position: 'absolute', left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) rotate(${rotate}deg)`,
-                textAlign: 'center', width: 52, background: 'none', border: 'none', cursor: isMyTurn ? 'pointer' : 'default', padding: 0,
+                textAlign: 'center', width: 68, background: 'none', border: 'none', cursor: isMyTurn ? 'pointer' : 'default', padding: 0,
               }}
             >
-              <img src={s.imageUrl} alt="" style={{ width: 28, height: 28 }} />
-              <div style={{ fontSize: '0.52rem', fontWeight: 700, color: 'var(--ink)' }}>{s.en}</div>
+              <img src={s.imageUrl} alt="" style={{ width: 40, height: 40 }} />
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--ink)' }}>{s.en}</div>
             </button>
           );
         })}
-      </div>
     </main>
   );
 }
