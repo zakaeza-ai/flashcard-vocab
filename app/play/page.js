@@ -218,7 +218,9 @@ function PlayGame({ pool, onExit }) {
         alignItems: 'center',
         justifyContent: 'center',
         transition: 'background 0.2s',
-        padding: 20,
+        padding: '20px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
       <div style={{ position: 'absolute', top: 16, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', color: 'white', fontFamily: 'var(--font-sarabun)' }}>
@@ -240,30 +242,31 @@ function PlayGame({ pool, onExit }) {
           background: 'var(--paper)',
           borderRadius: 20,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           padding: 20,
-          position: 'relative',
+          gap: 14,
         }}
       >
         <div
           style={{
-            position: 'absolute',
-            top: 14,
-            left: 18,
-            fontFamily: 'var(--font-sarabun)',
-            fontSize: '0.85rem',
-            color: 'var(--ink-soft)',
-            letterSpacing: '0.02em',
+            fontFamily: 'inherit',
+            fontWeight: 800,
+            fontSize: 'clamp(2.2rem, 10vw, 5rem)',
+            color: 'var(--ink)',
+            textAlign: 'center',
+            wordBreak: 'break-word',
+            lineHeight: 1.1,
           }}
         >
-          เฉลย: {w.en}
+          {w.en}
         </div>
         <div
           style={{
             fontFamily: 'var(--font-sarabun)',
-            fontWeight: 700,
-            fontSize: 'clamp(2rem, 9vw, 4.5rem)',
+            fontWeight: 600,
+            fontSize: 'clamp(1.4rem, 6vw, 2.6rem)',
             color: 'var(--coral-deep)',
             textAlign: 'center',
             wordBreak: 'break-word',
@@ -273,7 +276,7 @@ function PlayGame({ pool, onExit }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 24, width: '100%', maxWidth: 640 }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 20, width: '100%', maxWidth: 640, flexShrink: 0 }}>
         <button className="judge-btn wrong" style={{ flex: 1 }} onClick={() => goNext(false)}>❌ ผิด</button>
         <button className="judge-btn correct" style={{ flex: 1 }} onClick={() => goNext(true)}>✅ ถูก</button>
       </div>
