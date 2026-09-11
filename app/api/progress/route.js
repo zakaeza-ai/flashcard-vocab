@@ -1,54 +1,67 @@
-// Helper ฝั่ง client สำหรับคุยกับ /api/progress และ /api/app-state
-// แทนการเรียก supabase.from('progress') / supabase.from('app_state') ตรงจาก browser
-// (ปิด anon key ไม่ให้แตะ 2 ตารางนี้แล้ว — ต้องผ่าน API route ที่ใช้ service role key ฝั่ง server เท่านั้น)
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-async function apiGet(url) {
-  const res = await fetch(url);
-  const json = await res.json();
-  if (!res.ok || json.error) throw new Error(json.error || 'เรียก API ไม่สำเร็จ');
-  return json;
+function getServiceClient() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase URL หรือ SUPABASE_SERVICE_ROLE_KEY ไม่ได้ตั้งค่าไว้');
+  }
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
-async function apiSend(url, method, body) {
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const json = await res.json();
-  if (!res.ok || json.error) throw new Error(json.error || 'เรียก API ไม่สำเร็จ');
-  return json;
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const accountId = searchParams.get('account_id');
+    if (!accountId) return NextResponse.json({ error: 'account_id is required' }, { status: 400 });
+
+    const statusParam = searchParams.get('status');
+    const wordIdParam = searchParams.get('word_id');
+    const countOnly = searchParams.get('count') === 'true';
+
+    const supabase = getServiceClient();
+
+    if (countOnly) {
+      let query = supabase.from('progress').select('*', { count: 'exact', head: true }).eq('account_id', accountId);
+      if (statusParam) query = query.eq('status', statusParam);
+      const { count, error } = await query;
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ count: count || 0 });
+    }
+
+    let query = supabase.from('progress').select('word_id, status').eq('account_id', accountId);
+    if (statusParam) {
+      const statuses = statusParam.split(',');
+      query = statuses.length > 1 ? query.in('status', statuses) : query.eq('status', statuses[0]);
+    }
+    if (wordIdParam) {
+      query = query.in('word_id', wordIdParam.split(',').map(Number));
+    }
+    const { data, error } = await query;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ rows: data || [] });
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 }
 
-// ---------- app_state ----------
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { account_id, word_id, status } = body || {};
+    if (!account_id || !word_id || !status) {
+      return NextResponse.json({ error: 'account_id, word_id, status is required' }, { status: 400 });
+    }
 
-// ดึง app_state ของ account (สร้างแถวใหม่ให้อัตโนมัติถ้ายังไม่มี — เหมือนโค้ดเดิมที่กระจายอยู่หลายไฟล์)
-export async function getAppState(accountId) {
-  const { row } = await apiGet(`/api/app-state?account_id=${encodeURIComponent(accountId)}`);
-  return row;
-}
+    const supabase = getServiceClient();
+    const { data, error } = await supabase
+      .from('progress')
+      .upsert({ account_id, word_id, status, updated_at: new Date().toISOString() })
+      .select()
+      .single();
 
-// อัปเดตบางฟิลด์ของ app_state เช่น { current_day_index }, { last_active_date, current_streak }
-export async function patchAppState(accountId, patch) {
-  const { row } = await apiSend('/api/app-state', 'PATCH', { account_id: accountId, patch });
-  return row;
-}
-
-// ---------- progress ----------
-
-// options: { status: 'learned' | ['review','learned'], wordIds: [1,2,3], count: true }
-// - count:true  -> คืน { count }
-// - ไม่ใส่ count -> คืน { rows: [{word_id, status}, ...] }
-export async function getProgress(accountId, { status, wordIds, count } = {}) {
-  const params = new URLSearchParams({ account_id: accountId });
-  if (status) params.set('status', Array.isArray(status) ? status.join(',') : status);
-  if (wordIds && wordIds.length) params.set('word_id', wordIds.join(','));
-  if (count) params.set('count', 'true');
-  return apiGet(`/api/progress?${params.toString()}`);
-}
-
-// upsert แถว progress หนึ่งคำ
-export async function upsertProgress(accountId, wordId, status) {
-  const { row } = await apiSend('/api/progress', 'POST', { account_id: accountId, word_id: wordId, status });
-  return row;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ row: data });
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 }
