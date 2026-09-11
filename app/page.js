@@ -94,3 +94,46 @@ export default function Home() {
           <div><div className="t">คำศัพท์วันนี้</div><div className="d" style={{ color: '#FFE1E6' }}>10 คำ</div></div>
         </div><div className="go" style={{ color: 'white' }}>›</div>
       </Link>
+
+      <Link href="/test" className="menu-card">
+        <div className="row"><div className="icon">📝</div>
+          <div><div className="t">แบบทดสอบ</div><div className="d">ฟังแล้วพิมพ์ / เรียงตัวอักษร</div></div>
+        </div><div className="go">›</div>
+      </Link>
+
+      <Link href="/play" className="menu-card">
+        <div className="row"><div className="icon">👥</div>
+          <div><div className="t">เล่นกับเพื่อน</div><div className="d">ทายคำศัพท์แบบเกม</div></div>
+        </div><div className="go">›</div>
+      </Link>
+    <Link href="/spotit" className="menu-card">
+         <div className="row"><div className="icon">🃏</div>
+          <div><div className="t">Spot It คำศัพท์</div><div className="d">จับคู่คำศัพท์ 2-4 คน</div></div>
+      </div><div className="go">›</div>
+</Link>
+      <Link href="/review" className="menu-card">
+        <div className="row"><div className="icon">🔄</div>
+          <div><div className="t">คำที่ต้องทบทวน</div><div className="d">{reviewCount} คำ</div></div>
+        </div><div className="go">›</div>
+      </Link>
+
+      <Link href="/leaderboard" className="menu-card">
+        <div className="row"><div className="icon">🏆</div>
+          <div><div className="t">อันดับคะแนน</div><div className="d">ดูว่าใครท่องศัพท์ได้เยอะที่สุด</div></div>
+        </div><div className="go">›</div>
+      </Link>
+
+      <div className="stat-row">
+        <div className="stat-box"><div className="n">❤️ {learnedCount}</div><div className="l">คำที่จำได้</div></div>
+        <div className="stat-box"><div className="n">🔥 {appState.current_streak}</div><div className="l">วันติดต่อกัน</div></div>
+      </div>
+      <div className="stat-row" style={{ marginTop: 10 }}>
+        <div className="stat-box"><div className="n">⭐ Lv.{Math.floor(learnedCount / 100) + 1}</div><div className="l">เลเวลปัจจุบัน</div></div>
+      </div>
+
+      <button className="review-mark-btn" style={{ display: 'block', margin: '20px auto 0' }} onClick={logout}>
+        ออกจากระบบ
+      </button>
+    </main>
+  );
+}
