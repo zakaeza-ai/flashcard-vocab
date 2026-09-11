@@ -6,29 +6,43 @@ import { TARGET_DAYS } from '../lib/dayLogic';
 import { useAccount } from '../lib/accountContext';
 import { getHomeSummary } from '../lib/api';
 
-// การ์ดเมนูหลักแบบ tile สีพาสเทลแยกตามหมวด — จัด 2 คอลัมน์/แถว ให้ 6 รายการ + สถิติด้านล่างพอดีจอมือถือไม่ต้องเลื่อน
-function MenuTile({ href, icon, title, sub, bg }) {
+// การ์ดเมนูหลัก — แถวเดียวเต็มความกว้าง (เหมือนหน้าอื่นๆในแอปที่ใช้ .wrap ความกว้างเต็มจอ ไม่ได้ถูกบีบแบบ preview ที่โชว์ในแชท)
+// รองรับทั้งไอคอนรูปจริง (img) และอีโมจิ (icon) — ถ้ามี img จะโชว์รูปแทนอีโมจิ
+function MenuTile({ href, icon, img, title, sub, bg }) {
   return (
     <Link
       href={href}
       style={{
         background: bg,
         borderRadius: 16,
-        padding: '12px 10px',
+        padding: '13px 14px',
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
+        gap: 12,
         textDecoration: 'none',
-        color: 'white',
-        minHeight: 64,
       }}
     >
-      <div style={{ fontSize: '1.6rem', flexShrink: 0, lineHeight: 1 }}>{icon}</div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: '0.82rem', lineHeight: 1.25 }}>{title}</div>
-        <div style={{ fontSize: '0.68rem', opacity: 0.92, lineHeight: 1.25, marginTop: 2 }}>{sub}</div>
+      {img ? (
+        <img src={img} alt="" style={{ width: 34, height: 34, flexShrink: 0, objectFit: 'contain' }} />
+      ) : (
+        <div style={{ fontSize: '1.6rem', flexShrink: 0, lineHeight: 1 }}>{icon}</div>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#2B2118', lineHeight: 1.25 }}>{title}</div>
+        <div style={{ fontSize: '0.75rem', color: '#5C5347', lineHeight: 1.25, marginTop: 2 }}>{sub}</div>
       </div>
+      <div style={{ color: '#5C5347', fontSize: '1.2rem' }}>›</div>
     </Link>
+  );
+}
+
+// กล่องสถิติด้านล่าง — ใส่พื้นหลังพาสเทลของตัวเองให้เห็นชัด ไม่กลืนกับพื้นหลังแอป
+function StatBox({ n, l, bg }) {
+  return (
+    <div className="stat-box" style={{ background: bg, flex: 1 }}>
+      <div className="n" style={{ color: '#2B2118', fontWeight: 800 }}>{n}</div>
+      <div className="l">{l}</div>
+    </div>
   );
 }
 
@@ -129,22 +143,40 @@ export default function Home() {
         </Link>
       )}
 
-      {/* เมนูหลัก 6 รายการ สีพาสเทลแยกตามหมวด จัด 2 คอลัมน์/แถว = 3 แถว พอดีจอมือถือไม่ต้องเลื่อน */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-        <MenuTile href="/learn" icon="📚" title="คำศัพท์วันนี้" sub="10 คำ" bg="#FF8A65" />
-        <MenuTile href="/test" icon="📝" title="แบบทดสอบ" sub="ฟังแล้วพิมพ์ / เรียง" bg="#FFB74D" />
-        <MenuTile href="/play" icon="👥" title="เล่นกับเพื่อน" sub="ทายคำศัพท์เกม" bg="#64B5F6" />
-        <MenuTile href="/spotit" icon="🃏" title="Spot It คำศัพท์" sub="จับคู่ 2-4 คน" bg="#BA68C8" />
-        <MenuTile href="/review" icon="🔄" title="คำที่ต้องทบทวน" sub={`${reviewCount} คำ`} bg="#4DB6AC" />
-        <MenuTile href="/leaderboard" icon="🏆" title="อันดับคะแนน" sub="ดูอันดับทุกคน" bg="#F06292" />
+      {/* เมนูหลัก 6 รายการ — แถวเดียวเต็มความกว้าง สีพาสเทลแยกตามหมวด ตัวหนังสือดำหนาทุกแถว */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
+        <MenuTile
+          href="/learn" img="/icons/book.png" title="คำศัพท์วันนี้" sub="10 คำ"
+          bg="linear-gradient(135deg, #FF8A5C, #FF6A3D)"
+        />
+        <MenuTile
+          href="/test" icon="📝" title="แบบทดสอบ" sub="ฟังแล้วพิมพ์ / เรียง"
+          bg="#D6EFCB"
+        />
+        <MenuTile
+          href="/play" img="/icons/kids.png" title="เล่นกับเพื่อน" sub="ทายคำศัพท์เกม"
+          bg="#CFEAFB"
+        />
+        <MenuTile
+          href="/spotit" img="/icons/magnifier-boy.png" title="Spot It คำศัพท์" sub="จับคู่ 2-4 คน"
+          bg="#F6D9EC"
+        />
+        <MenuTile
+          href="/review" img="/icons/refresh.png" title="คำที่ต้องทบทวน" sub={`${reviewCount} คำ`}
+          bg="#CDF0E3"
+        />
+        <MenuTile
+          href="/leaderboard" img="/icons/trophy.png" title="อันดับคะแนน" sub="ดูอันดับทุกคน"
+          bg="#B9E3B0"
+        />
       </div>
 
-      <div className="stat-row">
-        <div className="stat-box"><div className="n">❤️ {learnedCount}</div><div className="l">คำที่จำได้</div></div>
-        <div className="stat-box"><div className="n">🔥 {appState.current_streak}</div><div className="l">วันติดต่อกัน</div></div>
+      <div className="stat-row" style={{ gap: 10 }}>
+        <StatBox n={`❤️ ${learnedCount}`} l="คำที่จำได้" bg="#FDE1E7" />
+        <StatBox n={`🔥 ${appState.current_streak}`} l="วันติดต่อกัน" bg="#FBD5D5" />
       </div>
       <div className="stat-row" style={{ marginTop: 10 }}>
-        <div className="stat-box"><div className="n">⭐ Lv.{Math.floor(learnedCount / 100) + 1}</div><div className="l">เลเวลปัจจุบัน</div></div>
+        <StatBox n={`⭐ Lv.${Math.floor(learnedCount / 100) + 1}`} l="เลเวลปัจจุบัน" bg="#CFE3FA" />
       </div>
 
       <button className="review-mark-btn" style={{ display: 'block', margin: '20px auto 0' }} onClick={logout}>
