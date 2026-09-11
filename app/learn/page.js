@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { todayStr, daysBetween } from '../../lib/dayLogic';
 import { useAccount } from '../../lib/accountContext';
+import { getAppState, patchAppState, getProgress, upsertProgress } from '../../lib/api';
 
 const WORDS_PER_DAY = 10;
 const TARGET_DAYS = 365;
@@ -45,89 +46,76 @@ export default function Learn() {
 
   useEffect(() => {
     async function load() {
-      let { data: stateRow, error: stateErr } = await supabase
-        .from('app_state').select('*').eq('account_id', account.id).single();
+      try {
+        const stateRow = await getAppState(account.id);
 
-      if (stateErr && stateErr.code === 'PGRST116') {
-        const { data: created, error: createErr } = await supabase
-          .from('app_state').insert({ account_id: account.id }).select().single();
-        if (createErr) { setError(createErr.message); setLoading(false); return; }
-        stateRow = created;
-      } else if (stateErr) {
-        setError(stateErr.message); setLoading(false); return;
-      }
+        const dayIdx = stateRow.current_day_index || 1;
+        dayIdxRef.current = dayIdx;
 
-      const dayIdx = stateRow.current_day_index || 1;
-      dayIdxRef.current = dayIdx;
+        const { data: dayWords, error: wordsErr } = await supabase
+          .from('words').select('*').eq('day_index', dayIdx).order('id', { ascending: true });
+        if (wordsErr) { setError(wordsErr.message); setLoading(false); return; }
 
-      const { data: dayWords, error: wordsErr } = await supabase
-        .from('words').select('*').eq('day_index', dayIdx).order('id', { ascending: true });
-      if (wordsErr) { setError(wordsErr.message); setLoading(false); return; }
+        let sessionWords = dayWords;
+        let reviewDay = false;
 
-      let sessionWords = dayWords;
-      let reviewDay = false;
-
-      if (!sessionWords || sessionWords.length === 0) {
-        reviewDay = true;
-        const { data: progressRows } = await supabase
-          .from('progress').select('word_id, status').eq('account_id', account.id).in('status', ['review', 'learned']);
-        let ids = (progressRows || []).map((p) => p.word_id);
-        if (ids.length === 0) {
-          const { data: anyWords } = await supabase.from('words').select('*').limit(WORDS_PER_DAY);
-          sessionWords = anyWords || [];
-        } else {
-          ids = shuffle(ids).slice(0, WORDS_PER_DAY);
-          const { data: reviewWords } = await supabase.from('words').select('*').in('id', ids);
-          sessionWords = reviewWords || [];
+        if (!sessionWords || sessionWords.length === 0) {
+          reviewDay = true;
+          const { rows: progressRows } = await getProgress(account.id, { status: ['review', 'learned'] });
+          let ids = (progressRows || []).map((p) => p.word_id);
+          if (ids.length === 0) {
+            const { data: anyWords } = await supabase.from('words').select('*').limit(WORDS_PER_DAY);
+            sessionWords = anyWords || [];
+          } else {
+            ids = shuffle(ids).slice(0, WORDS_PER_DAY);
+            const { data: reviewWords } = await supabase.from('words').select('*').in('id', ids);
+            sessionWords = reviewWords || [];
+          }
         }
+        setIsReviewDay(reviewDay);
+        isReviewDayRef.current = reviewDay;
+
+        const t = todayStr();
+        if (stateRow.last_active_date !== t) {
+          const newStreak = stateRow.last_active_date && daysBetween(stateRow.last_active_date, t) === 1
+            ? stateRow.current_streak + 1 : 1;
+          await patchAppState(account.id, { last_active_date: t, current_streak: newStreak });
+          setStreak(newStreak);
+        } else {
+          setStreak(stateRow.current_streak);
+        }
+
+        // Check which of today's words are already marked learned for this account —
+        // reopening the page after finishing shouldn't force re-hearting the same words.
+        const sessionIds = (sessionWords || []).map((w) => w.id);
+        const { rows: learnedRows } = await getProgress(account.id, { status: 'learned', wordIds: sessionIds });
+        const alreadyLearnedIds = new Set((learnedRows || []).map((r) => r.word_id));
+
+        const byId = {};
+        (sessionWords || []).forEach((w) => { byId[w.id] = w; });
+        setWordsById(byId);
+        setTotalCount(sessionIds.length);
+
+        const remainingIds = sessionIds.filter((id) => !alreadyLearnedIds.has(id));
+        setMasteredCount(sessionIds.length - remainingIds.length);
+
+        if (remainingIds.length === 0 && sessionIds.length > 0) {
+          setQueue([]);
+          setDone(true);
+        } else {
+          setQueue(remainingIds);
+        }
+        setLoading(false);
+      } catch (e) {
+        setError(e.message);
+        setLoading(false);
       }
-      setIsReviewDay(reviewDay);
-      isReviewDayRef.current = reviewDay;
-
-      const t = todayStr();
-      if (stateRow.last_active_date !== t) {
-        const newStreak = stateRow.last_active_date && daysBetween(stateRow.last_active_date, t) === 1
-          ? stateRow.current_streak + 1 : 1;
-        await supabase.from('app_state').update({ last_active_date: t, current_streak: newStreak }).eq('account_id', account.id);
-        setStreak(newStreak);
-      } else {
-        setStreak(stateRow.current_streak);
-      }
-
-      // Check which of today's words are already marked learned for this account —
-      // reopening the page after finishing shouldn't force re-hearting the same words.
-      const sessionIds = (sessionWords || []).map((w) => w.id);
-      const { data: learnedRows } = await supabase
-        .from('progress')
-        .select('word_id')
-        .eq('account_id', account.id)
-        .eq('status', 'learned')
-        .in('word_id', sessionIds);
-      const alreadyLearnedIds = new Set((learnedRows || []).map((r) => r.word_id));
-
-      const byId = {};
-      (sessionWords || []).forEach((w) => { byId[w.id] = w; });
-      setWordsById(byId);
-      setTotalCount(sessionIds.length);
-
-      const remainingIds = sessionIds.filter((id) => !alreadyLearnedIds.has(id));
-      setMasteredCount(sessionIds.length - remainingIds.length);
-
-      if (remainingIds.length === 0 && sessionIds.length > 0) {
-        setQueue([]);
-        setDone(true);
-      } else {
-        setQueue(remainingIds);
-      }
-      setLoading(false);
     }
     load();
   }, [account.id]);
 
   async function markLearned(wordId) {
-    await supabase.from('progress').upsert({
-      account_id: account.id, word_id: wordId, status: 'learned', updated_at: new Date().toISOString(),
-    });
+    await upsertProgress(account.id, wordId, 'learned');
     setJustMissed(false);
     setMasteredCount((c) => c + 1);
     setQueue((q) => {
@@ -138,9 +126,7 @@ export default function Learn() {
   }
 
   async function markStillLearning(wordId) {
-    await supabase.from('progress').upsert({
-      account_id: account.id, word_id: wordId, status: 'review', updated_at: new Date().toISOString(),
-    });
+    await upsertProgress(account.id, wordId, 'review');
     setJustMissed(true);
     // send this word to the back of the queue so it comes around again
     setQueue((q) => {
