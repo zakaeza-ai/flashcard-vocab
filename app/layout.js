@@ -1,12 +1,12 @@
-import { Kanit, Sarabun } from 'next/font/google';
+import { Baloo_2, Sarabun } from 'next/font/google';
 import './globals.css';
 import { AccountProvider } from '../lib/accountContext';
 
-const kanit = Kanit({
+const baloo = Baloo_2({
   subsets: ['latin', 'thai'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
-  variable: '--font-kanit',
+  variable: '--font-baloo',
 });
 
 const sarabun = Sarabun({
@@ -24,7 +24,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="th">
-      <body className={`${kanit.className} ${kanit.variable} ${sarabun.variable}`}>
+      <body className={`${baloo.className} ${baloo.variable} ${sarabun.variable}`}>
         <AccountProvider>{children}</AccountProvider>
       </body>
     </html>
