@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TARGET_DAYS } from '../lib/dayLogic';
 import { useAccount } from '../lib/accountContext';
-import { getAppState, getProgress } from '../lib/api';
+import { getHomeSummary } from '../lib/api';
 
 export default function Home() {
   const { account, logout } = useAccount();
@@ -17,9 +17,9 @@ export default function Home() {
   useEffect(() => {
     async function load() {
       try {
-        const stateRow = await getAppState(account.id);
-        const { count: learned } = await getProgress(account.id, { status: 'learned', count: true });
-        const { count: review } = await getProgress(account.id, { status: 'review', count: true });
+        // เดิมเรียก 3 API แยกกัน (app_state + นับ learned + นับ review) ตอนนี้รวมเป็นครั้งเดียว
+        // ผ่าน /api/home-summary ลด round-trip ทำให้หน้าแรกโหลดเร็วขึ้น
+        const { appState: stateRow, learnedCount: learned, reviewCount: review } = await getHomeSummary(account.id);
 
         setAppState(stateRow);
         setLearnedCount(learned || 0);
