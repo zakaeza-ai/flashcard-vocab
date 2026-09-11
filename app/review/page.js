@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useAccount } from '../../lib/accountContext';
+import { getProgress } from '../../lib/api';
 
 function speak(text) {
   try {
@@ -22,11 +23,7 @@ export default function Review() {
 
   useEffect(() => {
     async function load() {
-      const { data: progressRows } = await supabase
-        .from('progress')
-        .select('word_id')
-        .eq('account_id', account.id)
-        .eq('status', 'review');
+      const { rows: progressRows } = await getProgress(account.id, { status: 'review' });
       const ids = (progressRows || []).map((r) => r.word_id);
       if (ids.length) {
         const { data: wordRows } = await supabase.from('words').select('*').in('id', ids);
