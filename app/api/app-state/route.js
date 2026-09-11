@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// รันบน Edge Runtime แทน Node.js เดิม — cold start เร็วขึ้นมาก และรันใกล้ผู้ใช้กว่า
+export const runtime = 'edge';
+
 function getServiceClient() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('Supabase URL หรือ SUPABASE_SERVICE_ROLE_KEY ไม่ได้ตั้งค่าไว้');
