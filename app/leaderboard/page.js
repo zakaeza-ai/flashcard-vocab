@@ -42,7 +42,7 @@ export default function Leaderboard() {
         <div className="title">🏆 อันดับคะแนน</div>
       </div>
 
-      <div style={{ fontFamily: 'var(--font-sarabun)', color: '#DCEFE9', fontSize: '0.88rem', marginBottom: 14 }}>
+      <div style={{ fontFamily: 'var(--font-sarabun)', color: 'var(--ink-soft)', fontSize: '0.88rem', marginBottom: 14 }}>
         จัดอันดับจากจำนวนคำศัพท์ที่จำได้สะสมทั้งหมด — ทุกคนเห็นอันดับเดียวกัน
       </div>
 
