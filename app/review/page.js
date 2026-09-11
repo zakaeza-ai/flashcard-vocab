@@ -37,7 +37,7 @@ export default function Review() {
   return (
     <main className="wrap">
       <div className="topbar">
-        <Link href="/" className="back-btn">←</Link>
+        <Link href="/" className="back-btn">🚪</Link>
         <div className="title">คำที่ต้องทบทวน</div>
       </div>
 
