@@ -257,7 +257,11 @@ function PlayGame({ pool, onExit }) {
   }
 
   function handleOrientation(event) {
-    receivedOrientationRef.current = true;
+    // ต้องมีค่าจริง (ไม่ใช่ null) ถึงจะถือว่ามีเซนเซอร์จริง — บางเบราว์เซอร์บนคอมยิง
+    // event นี้มาให้สักครั้งแต่ค่าเป็น null ทั้งหมด (ไม่มีเซนเซอร์จริง แค่ fire ตามสเปก)
+    if (event.beta != null || event.gamma != null) {
+      receivedOrientationRef.current = true;
+    }
     const orientType = getOrientationType();
     let tiltValue = event.gamma;
     if (orientType.startsWith('landscape')) {
