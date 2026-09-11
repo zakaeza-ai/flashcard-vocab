@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useAccount } from '../../lib/accountContext';
 import BgMusic from '../../lib/BgMusic';
+import { getAppState, patchAppState, upsertProgress } from '../../lib/api';
 
 const WORDS_PER_DAY = 10;
 
@@ -29,11 +30,7 @@ function shuffle(arr) {
 const TARGET_DAYS = 365;
 
 async function getTodayPoolForUnlock(accountId) {
-  let { data: stateRow } = await supabase.from('app_state').select('*').eq('account_id', accountId).single();
-  if (!stateRow) {
-    const { data: created } = await supabase.from('app_state').insert({ account_id: accountId }).select().single();
-    stateRow = created;
-  }
+  const stateRow = await getAppState(accountId);
   const dayIdx = stateRow.current_day_index || 1;
   const { data: dayWords } = await supabase.from('words').select('*').eq('day_index', dayIdx);
   if (dayWords && dayWords.length) {
@@ -45,7 +42,7 @@ async function getTodayPoolForUnlock(accountId) {
 
 async function advanceToNextDay(accountId, dayIdx) {
   const nextDay = Math.min(TARGET_DAYS, dayIdx + 1);
-  await supabase.from('app_state').update({ current_day_index: nextDay }).eq('account_id', accountId);
+  await patchAppState(accountId, { current_day_index: nextDay });
 }
 
 async function getPool(accountId) {
@@ -54,12 +51,7 @@ async function getPool(accountId) {
 }
 
 async function markResult(accountId, wordId, ok) {
-  await supabase.from('progress').upsert({
-    account_id: accountId,
-    word_id: wordId,
-    status: ok ? 'learned' : 'review',
-    updated_at: new Date().toISOString(),
-  });
+  await upsertProgress(accountId, wordId, ok ? 'learned' : 'review');
 }
 
 export default function TestMenu() {
