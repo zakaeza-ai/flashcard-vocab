@@ -159,7 +159,6 @@ function PlayGame({ pool, onExit }) {
   const [sensorSupported, setSensorSupported] = useState(true);
   const [listening, setListening] = useState(false);
   const [typedLetters, setTypedLetters] = useState([]);
-  const [debugInfo, setDebugInfo] = useState('');
 
   const armedRef = useRef(true); // true = พร้อมรับการเอียงครั้งต่อไป (ต้องกลับมาที่ neutral zone ก่อน)
   const timerRef = useRef(null);
@@ -170,7 +169,6 @@ function PlayGame({ pool, onExit }) {
     const typedLettersRef = useRef([]); // แหล่งความจริงของตัวอักษรที่สะกดมาแล้ว (sync ไม่รอ re-render)
   const lastTriggerRef = useRef(0);   // เวลาที่ตัดสินครั้งล่าสุด กันตัดสินซ้ำเร็วเกิน
   const startedAtRef = useRef(0);     // เวลาที่กดเริ่มเกม กันเอียงค้างจากตอนกดปุ่ม
-  const lastDebugUpdateRef = useRef(0);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
@@ -264,11 +262,6 @@ function PlayGame({ pool, onExit }) {
       tiltValue = orientType === 'landscape-primary' ? event.beta : -event.beta;
     }
     tiltValue = -tiltValue; // ยืนยันจากการทดสอบจริงแล้วว่าทิศทางกลับข้างกัน (เอียงขวาจริง = ค่าติดลบ) เลยกลับเครื่องหมายให้ตรง
-
-    if (Date.now() - lastDebugUpdateRef.current > 150) {
-      lastDebugUpdateRef.current = Date.now();
-      setDebugInfo(`β=${event.beta?.toFixed(0)} γ=${event.gamma?.toFixed(0)} orient=${orientType || '?'} tilt=${tiltValue?.toFixed?.(0)}`);
-    }
 
     if (tiltValue == null) return;
     if (Date.now() - startedAtRef.current < START_GRACE_MS) return;
@@ -435,12 +428,6 @@ function PlayGame({ pool, onExit }) {
         <span style={{ background: 'rgba(0,0,0,0.25)', padding: '6px 18px', borderRadius: 999 }}>✅ {score}</span>
         <span style={{ background: 'rgba(0,0,0,0.25)', padding: '6px 18px', borderRadius: 999 }}>⏱ {timeLeft} วิ</span>
       </div>
-
-          {debugInfo && (
-        <div style={{ position: 'absolute', top: 60, left: 16, right: 16, color: 'white', fontSize: '0.7rem', textAlign: 'center', fontFamily: 'monospace', opacity: 0.85 }}>
-          {debugInfo}
-        </div>
-      )}
 
       {!sensorSupported && (
         <div style={{ position: 'absolute', bottom: 90, color: 'var(--ink)', fontFamily: 'var(--font-sarabun)', fontSize: '0.8rem', textAlign: 'center', padding: '0 20px', background: 'rgba(255,255,255,0.6)', borderRadius: 12 }}>
