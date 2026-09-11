@@ -352,7 +352,7 @@ export default function SpotItSetup() {
     return (
       <main className="wrap">
         <div className="topbar">
-          <Link href="/" className="back-btn">←</Link>
+          <Link href="/" className="back-btn">🚪</Link>
           <div className="title">Spot It คำศัพท์</div>
         </div>
         <div style={{ fontFamily: 'var(--font-sarabun)', color: 'var(--ink-soft)', fontSize: '0.92rem', marginBottom: 14, lineHeight: 1.6 }}>
@@ -401,7 +401,7 @@ export default function SpotItSetup() {
     return (
       <main className="wrap">
         <div className="topbar">
-          <button className="back-btn" onClick={leaveRoom}>←</button>
+          <button className="back-btn" onClick={leaveRoom}>🚪</button>
           <div className="title">ห้องรอผู้เล่น</div>
         </div>
         <div className="progress-card" style={{ textAlign: 'center' }}>
@@ -440,7 +440,7 @@ export default function SpotItSetup() {
     return (
       <main className="wrap">
         <div className="topbar">
-          <button className="back-btn" onClick={leaveRoom}>←</button>
+          <button className="back-btn" onClick={leaveRoom}>🚪</button>
           <div className="title">Spot It คำศัพท์</div>
         </div>
         <div className="card-stage">
@@ -462,7 +462,7 @@ export default function SpotItSetup() {
   return (
     <main className="wrap">
       <div className="topbar">
-        <button className="back-btn" onClick={leaveRoom}>←</button>
+        <button className="back-btn" onClick={leaveRoom}>🚪</button>
         <div className="title">Spot It คำศัพท์</div>
       </div>
 
