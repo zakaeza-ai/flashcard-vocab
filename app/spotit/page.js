@@ -10,7 +10,7 @@ const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const MAX_PLAYERS = 4;
 const MIN_PLAYERS = 2;
 const HAND_SIZE = 4;
-const TURN_SECONDS = 60;
+const TURN_SECONDS = 45;
 
 const LEVEL_LABEL = { 1: 'ง่าย (ป.1-3)', 2: 'กลาง (ป.4-6)', 3: 'ยาก (ม.1-3)' };
 const LEVEL_GRADES = { 2: ['ป.4', 'ป.5', 'ป.6'], 3: ['ม.1', 'ม.2', 'ม.3'] };
@@ -30,19 +30,33 @@ function shuffle(arr) {
   return a;
 }
 // โชว์สัญลักษณ์ตาม variant ที่สุ่มไว้ตอนสร้างสำรับ — รูป / คำอังกฤษ / คำไทย
+// คำยาวลดฟอนต์ลงอัตโนมัติ + ไม่ตัดขึ้นบรรทัดใหม่ กันข้อความล้นออกนอกวง
 function SymbolFace({ s }) {
   if (s.variant === 'image') {
     return <img src={s.imageUrl} alt="" style={{ width: 56, height: 56 }} />;
   }
   const text = s.variant === 'th' ? s.mean : s.en;
-  return <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.2 }}>{text}</div>;
+  const fontSize = text.length > 8 ? '0.75rem' : text.length > 5 ? '0.92rem' : '1.1rem';
+  return (
+    <div style={{ fontSize, fontWeight: 800, color: 'var(--ink)', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+      {text}
+    </div>
+  );
 }
+
+// ตำแหน่งแรก (i === 0) = จุดกลางวงเสมอ ตรงกับที่ getPlayDeck บังคับ variant 'image' ไว้
+// ที่เหลือ (7 ตำแหน่ง) กระจายเป็นวงรอบ โดยหมุนข้อความให้ชี้ตามแนวรัศมี อ่านง่ายและไม่ยื่นออกนอกวงแบบสุ่ม
 function symbolLayout(i, total) {
-  const angle = (i * (360 / total) * Math.PI) / 180;
-  const radiusPercent = 26 + (i % 3) * 6;
+  if (i === 0) {
+    return { x: 50, y: 50, rotate: 0 };
+  }
+  const ringTotal = total - 1;
+  const ringIndex = i - 1;
+  const angle = (ringIndex * (360 / ringTotal) * Math.PI) / 180;
+  const radiusPercent = 34;
   const x = 50 + radiusPercent * Math.cos(angle);
   const y = 50 + radiusPercent * Math.sin(angle);
-  let rotate = (i * 53) % 360;
+  let rotate = (angle * 180) / Math.PI + 90;
   if (rotate > 180) rotate -= 360;
   return { x, y, rotate };
 }
