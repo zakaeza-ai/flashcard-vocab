@@ -6,6 +6,32 @@ import { TARGET_DAYS } from '../lib/dayLogic';
 import { useAccount } from '../lib/accountContext';
 import { getHomeSummary } from '../lib/api';
 
+// การ์ดเมนูหลักแบบ tile สีพาสเทลแยกตามหมวด — จัด 2 คอลัมน์/แถว ให้ 6 รายการ + สถิติด้านล่างพอดีจอมือถือไม่ต้องเลื่อน
+function MenuTile({ href, icon, title, sub, bg }) {
+  return (
+    <Link
+      href={href}
+      style={{
+        background: bg,
+        borderRadius: 16,
+        padding: '12px 10px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        textDecoration: 'none',
+        color: 'white',
+        minHeight: 64,
+      }}
+    >
+      <div style={{ fontSize: '1.6rem', flexShrink: 0, lineHeight: 1 }}>{icon}</div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: '0.82rem', lineHeight: 1.25 }}>{title}</div>
+        <div style={{ fontSize: '0.68rem', opacity: 0.92, lineHeight: 1.25, marginTop: 2 }}>{sub}</div>
+      </div>
+    </Link>
+  );
+}
+
 export default function Home() {
   const { account, logout } = useAccount();
   const [loading, setLoading] = useState(true);
@@ -17,10 +43,7 @@ export default function Home() {
   useEffect(() => {
     async function load() {
       try {
-        // เดิมเรียก 3 API แยกกัน (app_state + นับ learned + นับ review) ตอนนี้รวมเป็นครั้งเดียว
-        // ผ่าน /api/home-summary ลด round-trip ทำให้หน้าแรกโหลดเร็วขึ้น
         const { appState: stateRow, learnedCount: learned, reviewCount: review } = await getHomeSummary(account.id);
-
         setAppState(stateRow);
         setLearnedCount(learned || 0);
         setReviewCount(review || 0);
@@ -55,6 +78,8 @@ export default function Home() {
   const dayIdx = appState.current_day_index || 1;
   const pct = Math.round((dayIdx / TARGET_DAYS) * 100);
   const oxfordUnlocked = dayIdx > 355;
+  // ตำแหน่งตัวการ์ตูนวิ่งตามแถบ % — กันไม่ให้ล้นออกไปนอกกรอบซ้าย/ขวาตอน % ต่ำมากหรือสูงมาก
+  const runnerPct = Math.min(94, Math.max(2, pct));
 
   return (
     <main className="wrap">
@@ -66,7 +91,21 @@ export default function Home() {
           <span className="label">วันที่ {dayIdx} / {TARGET_DAYS}</span>
           <span className="value">{pct}%</span>
         </div>
-        <div className="bar-track"><div className="bar-fill" style={{ width: pct + '%' }} /></div>
+        <div style={{ position: 'relative', margin: '14px 0 4px' }}>
+          <div className="bar-track"><div className="bar-fill" style={{ width: pct + '%' }} /></div>
+          <div
+            style={{
+              position: 'absolute',
+              left: `${runnerPct}%`,
+              top: '50%',
+              transform: 'translate(-50%, -78%)',
+              fontSize: '1.35rem',
+              transition: 'left 0.4s ease',
+            }}
+          >
+            🐯
+          </div>
+        </div>
         <div className="streak-line">🔥 เรียนติดต่อกัน <b>{appState.current_streak}</b> วัน</div>
       </div>
 
@@ -78,6 +117,7 @@ export default function Home() {
             background: 'linear-gradient(135deg, var(--gold-deep), var(--gold))',
             color: 'var(--ink)',
             border: '2px solid var(--gold-deep)',
+            marginBottom: 12,
           }}
         >
           <div className="row"><div className="icon">🎓</div>
@@ -89,39 +129,15 @@ export default function Home() {
         </Link>
       )}
 
-      <Link href="/learn" className="menu-card" style={{ background: 'linear-gradient(135deg, var(--coral), var(--coral-deep))', color: 'white' }}>
-        <div className="row"><div className="icon">📚</div>
-          <div><div className="t">คำศัพท์วันนี้</div><div className="d" style={{ color: '#FFE1E6' }}>10 คำ</div></div>
-        </div><div className="go" style={{ color: 'white' }}>›</div>
-      </Link>
-
-      <Link href="/test" className="menu-card">
-        <div className="row"><div className="icon">📝</div>
-          <div><div className="t">แบบทดสอบ</div><div className="d">ฟังแล้วพิมพ์ / เรียงตัวอักษร</div></div>
-        </div><div className="go">›</div>
-      </Link>
-
-      <Link href="/play" className="menu-card">
-        <div className="row"><div className="icon">👥</div>
-          <div><div className="t">เล่นกับเพื่อน</div><div className="d">ทายคำศัพท์แบบเกม</div></div>
-        </div><div className="go">›</div>
-      </Link>
-    <Link href="/spotit" className="menu-card">
-         <div className="row"><div className="icon">🃏</div>
-          <div><div className="t">Spot It คำศัพท์</div><div className="d">จับคู่คำศัพท์ 2-4 คน</div></div>
-      </div><div className="go">›</div>
-</Link>
-      <Link href="/review" className="menu-card">
-        <div className="row"><div className="icon">🔄</div>
-          <div><div className="t">คำที่ต้องทบทวน</div><div className="d">{reviewCount} คำ</div></div>
-        </div><div className="go">›</div>
-      </Link>
-
-      <Link href="/leaderboard" className="menu-card">
-        <div className="row"><div className="icon">🏆</div>
-          <div><div className="t">อันดับคะแนน</div><div className="d">ดูว่าใครท่องศัพท์ได้เยอะที่สุด</div></div>
-        </div><div className="go">›</div>
-      </Link>
+      {/* เมนูหลัก 6 รายการ สีพาสเทลแยกตามหมวด จัด 2 คอลัมน์/แถว = 3 แถว พอดีจอมือถือไม่ต้องเลื่อน */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+        <MenuTile href="/learn" icon="📚" title="คำศัพท์วันนี้" sub="10 คำ" bg="#FF8A65" />
+        <MenuTile href="/test" icon="📝" title="แบบทดสอบ" sub="ฟังแล้วพิมพ์ / เรียง" bg="#FFB74D" />
+        <MenuTile href="/play" icon="👥" title="เล่นกับเพื่อน" sub="ทายคำศัพท์เกม" bg="#64B5F6" />
+        <MenuTile href="/spotit" icon="🃏" title="Spot It คำศัพท์" sub="จับคู่ 2-4 คน" bg="#BA68C8" />
+        <MenuTile href="/review" icon="🔄" title="คำที่ต้องทบทวน" sub={`${reviewCount} คำ`} bg="#4DB6AC" />
+        <MenuTile href="/leaderboard" icon="🏆" title="อันดับคะแนน" sub="ดูอันดับทุกคน" bg="#F06292" />
+      </div>
 
       <div className="stat-row">
         <div className="stat-box"><div className="n">❤️ {learnedCount}</div><div className="l">คำที่จำได้</div></div>
