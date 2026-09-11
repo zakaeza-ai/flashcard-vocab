@@ -1,12 +1,12 @@
-import { Baloo_2, Sarabun } from 'next/font/google';
+import { Mitr, Sarabun } from 'next/font/google';
 import './globals.css';
 import { AccountProvider } from '../lib/accountContext';
 
-const baloo = Baloo_2({
+const mitr = Mitr({
   subsets: ['latin', 'thai'],
-  weight: ['400', '500', '600', '700', '800'],
+  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
-  variable: '--font-baloo',
+  variable: '--font-mitr',
 });
 
 const sarabun = Sarabun({
@@ -24,7 +24,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="th">
-      <body className={`${baloo.className} ${baloo.variable} ${sarabun.variable}`}>
+      <body className={`${mitr.className} ${mitr.variable} ${sarabun.variable}`}>
         <AccountProvider>{children}</AccountProvider>
       </body>
     </html>
