@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// รันบน Edge Runtime แทน Node.js เดิม — cold start เร็วขึ้นมาก และรันใกล้ผู้ใช้กว่า
+// (ทำได้เพราะ supabase-js ใช้ fetch ธรรมดา ไม่พึ่ง Node API ที่ Edge ไม่รองรับ)
+export const runtime = 'edge';
+
+// ใช้ SUPABASE_SERVICE_ROLE_KEY (ตัวแปร env ฝั่ง server เท่านั้น — ห้ามมี NEXT_PUBLIC_ นำหน้า
+// เด็ดขาด เพราะจะถูกส่งไป browser) แทน anon key ที่ frontend เคยใช้เรียกตรง
 function getServiceClient() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('Supabase URL หรือ SUPABASE_SERVICE_ROLE_KEY ไม่ได้ตั้งค่าไว้');
@@ -8,6 +14,7 @@ function getServiceClient() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
+// GET /api/progress?account_id=xxx&status=learned,review&word_id=1,2,3&count=true
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -44,6 +51,7 @@ export async function GET(request) {
   }
 }
 
+// POST /api/progress  { account_id, word_id, status }
 export async function POST(request) {
   try {
     const body = await request.json();
