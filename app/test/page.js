@@ -60,7 +60,7 @@ export default function TestMenu() {
   return (
     <main className="wrap">
       <div className="topbar">
-        <Link href="/" className="back-btn">←</Link>
+        <Link href="/" className="back-btn">🚪</Link>
         <div className="title">แบบทดสอบ</div>
       </div>
 
