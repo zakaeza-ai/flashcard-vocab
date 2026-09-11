@@ -169,6 +169,7 @@ function PlayGame({ pool, onExit }) {
     const typedLettersRef = useRef([]); // แหล่งความจริงของตัวอักษรที่สะกดมาแล้ว (sync ไม่รอ re-render)
   const lastTriggerRef = useRef(0);   // เวลาที่ตัดสินครั้งล่าสุด กันตัดสินซ้ำเร็วเกิน
   const startedAtRef = useRef(0);     // เวลาที่กดเริ่มเกม กันเอียงค้างจากตอนกดปุ่ม
+  const receivedOrientationRef = useRef(false); // true ทันทีที่มีสัญญาณเอียงเข้ามาจริงสักครั้ง — ใช้เช็คว่าเครื่องนี้มีเซนเซอร์จริงไหม (โน้ตบุ๊คไม่มีจะไม่มีสัญญาณเข้ามาเลย)
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
@@ -256,6 +257,7 @@ function PlayGame({ pool, onExit }) {
   }
 
   function handleOrientation(event) {
+    receivedOrientationRef.current = true;
     const orientType = getOrientationType();
     let tiltValue = event.gamma;
     if (orientType.startsWith('landscape')) {
@@ -299,7 +301,13 @@ function PlayGame({ pool, onExit }) {
         armedRef.current = true;
     lastTriggerRef.current = 0;
     startedAtRef.current = Date.now();
+    receivedOrientationRef.current = false;
     window.addEventListener('deviceorientation', handleOrientation);
+    // ถ้าผ่านไป 1.5 วิ ยังไม่มีสัญญาณเอียงเข้ามาเลย (เช่นเล่นบนโน้ตบุ๊คที่ไม่มี gyroscope)
+    // ให้ถือว่าเครื่องนี้ใช้เซนเซอร์ไม่ได้ เปิดปุ่ม ✅/❌ ให้กดแทน
+    setTimeout(() => {
+      if (!receivedOrientationRef.current) setSensorSupported(false);
+    }, 1500);
     setPhase('playing');
     setTimeLeft(ROUND_SECONDS);
     timerRef.current = setInterval(() => {
@@ -519,8 +527,8 @@ function PlayGame({ pool, onExit }) {
 
             {!sensorSupported && (
         <div style={{ display: 'flex', gap: 16, marginTop: 14, width: '100%', maxWidth: 640, flexShrink: 0 }}>
-          <button className="judge-btn correct" style={{ flex: 1 }} onClick={() => goNext(true)}>✅ ถูก</button>
           <button className="judge-btn wrong" style={{ flex: 1 }} onClick={() => goNext(false)}>❌ ผิด</button>
+          <button className="judge-btn correct" style={{ flex: 1 }} onClick={() => goNext(true)}>✅ ถูก</button>
         </div>
       )}
     </div>
