@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 import { useAccount } from '../../lib/accountContext';
+import { getAppState, getProgress } from '../../lib/api';
 
 const SESSION_SIZE = 20;
 const ROUND_SECONDS = 60;
@@ -90,18 +91,14 @@ function shuffle(arr) {
 }
 
 async function poolToday(accountId) {
-  let { data: stateRow } = await supabase.from('app_state').select('*').eq('account_id', accountId).single();
-  if (!stateRow) {
-    const { data: created } = await supabase.from('app_state').insert({ account_id: accountId }).select().single();
-    stateRow = created;
-  }
+  const stateRow = await getAppState(accountId);
   const dayIdx = stateRow.current_day_index || 1;
   const { data: words } = await supabase.from('words').select('id, en, mean').eq('day_index', dayIdx);
   return shuffle([...(words || [])]);
 }
 
 async function poolLearned(accountId) {
-  const { data: progressRows } = await supabase.from('progress').select('word_id').eq('account_id', accountId).eq('status', 'learned');
+  const { rows: progressRows } = await getProgress(accountId, { status: 'learned' });
   const ids = (progressRows || []).map((r) => r.word_id);
   if (ids.length === 0) return [];
   const { data: words } = await supabase.from('words').select('id, en, mean').in('id', ids);
