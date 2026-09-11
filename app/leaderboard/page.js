@@ -38,7 +38,7 @@ export default function Leaderboard() {
   return (
     <main className="wrap">
       <div className="topbar">
-        <Link href="/" className="back-btn">←</Link>
+        <Link href="/" className="back-btn">🚪</Link>
         <div className="title">🏆 อันดับคะแนน</div>
       </div>
 
