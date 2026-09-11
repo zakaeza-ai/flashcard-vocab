@@ -134,7 +134,7 @@ export default function PlaySetup() {
   return (
     <main className="wrap">
       <div className="topbar">
-        <Link href="/" className="back-btn">←</Link>
+        <Link href="/" className="back-btn">🚪</Link>
         <div className="title">เล่นกับเพื่อน</div>
       </div>
       <div style={{ fontFamily: 'var(--font-sarabun)', color: 'var(--ink-soft)', fontSize: '0.92rem', marginBottom: 14, lineHeight: 1.6 }}>
@@ -342,7 +342,7 @@ function PlayGame({ pool, onExit }) {
     return (
       <main className="wrap">
         <div className="topbar">
-          <button className="back-btn" onClick={onExit}>←</button>
+          <button className="back-btn" onClick={onExit}>🚪</button>
           <div className="title">เล่นกับเพื่อน</div>
         </div>
         <div className="card-stage">
@@ -389,7 +389,7 @@ function PlayGame({ pool, onExit }) {
     return (
       <main className="wrap">
         <div className="topbar">
-          <button className="back-btn" onClick={onExit}>←</button>
+          <button className="back-btn" onClick={onExit}>🚪</button>
           <div className="title">เล่นกับเพื่อน</div>
         </div>
         <div className="card-stage">
