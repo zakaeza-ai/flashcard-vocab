@@ -37,7 +37,7 @@ export default function Review() {
   return (
     <main className="wrap">
       <div className="topbar">
-        <Link href="/" className="back-btn">🚪</Link>
+        <Link href="/" className="back-btn"><img src="/icons/home.png" alt="กลับหน้าหลัก" style={{ width: 26, height: 26 }} /></Link>
         <div className="title">คำที่ต้องทบทวน</div>
       </div>
 
