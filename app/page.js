@@ -94,6 +94,16 @@ export default function Home() {
   const oxfordUnlocked = dayIdx > 355;
   // ตำแหน่งตัวการ์ตูนวิ่งตามแถบ % — กันไม่ให้ล้นออกไปนอกกรอบซ้าย/ขวาตอน % ต่ำมากหรือสูงมาก
   const runnerPct = Math.min(94, Math.max(2, pct));
+  // สุ่มตัวการ์ตูนวิ่งตามวันที่เรียน — ตัวเดิมตลอดทั้งวัน เปลี่ยนเป็นตัวใหม่พอขึ้นวันถัดไป วนครบ 6 ตัว
+  const RUNNER_CATS = [
+    '/icons/cats/cat1.png',
+    '/icons/cats/cat2.png',
+    '/icons/cats/cat3.png',
+    '/icons/cats/cat4.png',
+    '/icons/cats/cat5.png',
+    '/icons/cats/cat6.png',
+  ];
+  const runnerCat = RUNNER_CATS[(dayIdx - 1) % RUNNER_CATS.length];
 
   return (
     <main className="wrap">
@@ -112,12 +122,12 @@ export default function Home() {
               position: 'absolute',
               left: `${runnerPct}%`,
               top: '50%',
-              transform: 'translate(-50%, -78%)',
-              fontSize: '1.35rem',
+              transform: 'translate(-50%, -70%)',
+              width: 30,
               transition: 'left 0.4s ease',
             }}
           >
-            🐯
+            <img src={runnerCat} alt="" style={{ width: '100%', display: 'block' }} />
           </div>
         </div>
         <div className="streak-line">🔥 เรียนติดต่อกัน <b>{appState.current_streak}</b> วัน</div>
